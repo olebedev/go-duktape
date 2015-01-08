@@ -1,3 +1,3 @@
 # duk
-Duktape's bindings for Golang
+[Duktape](http://duktape.org/index.html)'s bindings for Golang.
 > Note: work in progress!
