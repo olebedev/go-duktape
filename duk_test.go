@@ -12,14 +12,24 @@ func TestEvalString(t *testing.T) {
 }
 
 func TestGoFunc(t *testing.T) {
-	// ctx := NewContext()
-	// ctx.PushGlobalObject()
-	//
+	ctx := NewContext()
+	ctx.PushGlobalObject()
+
 	// cfn := C.duk_c_function(unsafe.Pointer(&GO_TO_C_FUNC))
 	// C.duk_push_c_function(ctx.duk_context, cfn, C.duk_idx_t(2))
 	//
+	// ctx.PushGoFunc(func(c *Context) int {
+	// 	return 0 // returns EcmaScript undefined
+	// }, -1)
 	// ctx.PutPropString(-2, "adder")
+	ctx.pushAddFunction()
+	ctx.PutPropString(-2, "adder")
+	ctx.Pop()
 
+	ctx.EvalString(`""+adder(2, 3)`)
+	expect(t, ctx.GetType(-1).IsString(), true)
+	expect(t, ctx.GetString(-1), "5")
+	ctx.DestroyHeap()
 }
 
 // 	ctx.Pop()

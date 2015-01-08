@@ -1,15 +1,29 @@
 package duk
 
 /*
+Нужно сделать так:
+Объявить в go функцию, которая может делать замыкание на уже реальную функцию
+func(*Context) int. Эскпортировать её. В Си сделать враппер, который вызывает эту
+go функцию О_о
+*/
+
+/*
 # include "duktape.h"
+duk_c_function go_duk_c_function();
 static void go_duk_eval_string(duk_context *ctx, const char *str) {
   return duk_eval_string(ctx, str);
 }
-
-
 */
 import "C"
 import "unsafe"
+
+//export toDukCFunction
+func toDukCFunction(f func(*Context) int) *unsafe.Pointer {
+	fn := func(pnt unsafe.Pointer) C.duk_ret_t {
+		return C.duk_ret_t(f(&Context{duk_context: pnt}))
+	}
+	return (*unsafe.Pointer)(unsafe.Pointer(&fn))
+}
 
 const (
 	DUK_TYPE_NONE Type = iota
@@ -34,8 +48,6 @@ func (t Type) IsString() bool    { return t == DUK_TYPE_STRING }
 func (t Type) IsObject() bool    { return t == DUK_TYPE_OBJECT }
 func (t Type) IsBuffer() bool    { return t == DUK_TYPE_BUFFER }
 func (t Type) IsPointer() bool   { return t == DUK_TYPE_POINTER }
-
-type GoFunc func(*Context) int
 
 type Context struct {
 	duk_context unsafe.Pointer
@@ -64,9 +76,19 @@ func (d *Context) GetString(i int) string {
 	return ""
 }
 
-func (d *Context) PushGoFunc(fn GoFunc, nargs int) {
+func (d *Context) PushGoFunc(fn func(*Context) int, nargs int) {
 	// TODO
-	// C.duk_push_c_function(d.duk_context, (*[0]byte)(unsafe.Pointer(&fn)), C.duk_idx_t(nargs))
+	// wrap := func(pnt unsafe.Pointer) C.duk_ret_t {
+	// 	return C.duk_ret_t(fn(&Context{duk_context: pnt}))
+	// }
+}
+
+func (d *Context) pushAddFunction() {
+	C.duk_push_c_function(
+		d.duk_context,
+		C.go_duk_c_function(),
+		C.duk_idx_t(2),
+	)
 }
 
 func (d *Context) PushGlobalObject() {
