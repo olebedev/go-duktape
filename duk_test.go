@@ -32,6 +32,17 @@ func TestGoFunc(t *testing.T) {
 	ctx.DestroyHeap()
 }
 
+// func TestHTTPRequest(t *testing.T) {
+// 	defer func() {
+// 		if r := recover(); r != nil {
+// 			t.Errorf("%v", r)
+// 		}
+// 	}()
+// 	ctx := NewContext()
+// 	ctx.bindHttpFunc()
+// 	ctx.EvalString(`""+adder(2, 3)`)
+// }
+
 // 	ctx.Pop()
 // 	ctx.EvalString(`"Hello Oleg!"`)
 // 	fmt.Printf("GetString: %s\n", ctx.GetString(-1))

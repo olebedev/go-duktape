@@ -1,29 +1,15 @@
 package duk
 
 /*
-Нужно сделать так:
-Объявить в go функцию, которая может делать замыкание на уже реальную функцию
-func(*Context) int. Эскпортировать её. В Си сделать враппер, который вызывает эту
-go функцию О_о
-*/
-
-/*
 # include "duktape.h"
-duk_c_function go_duk_c_function();
+duk_c_function http_req();
 static void go_duk_eval_string(duk_context *ctx, const char *str) {
   return duk_eval_string(ctx, str);
 }
 */
 import "C"
+import "fmt"
 import "unsafe"
-
-//export toDukCFunction
-func toDukCFunction(f func(*Context) int) *unsafe.Pointer {
-	fn := func(pnt unsafe.Pointer) C.duk_ret_t {
-		return C.duk_ret_t(f(&Context{duk_context: pnt}))
-	}
-	return (*unsafe.Pointer)(unsafe.Pointer(&fn))
-}
 
 const (
 	DUK_TYPE_NONE Type = iota
@@ -83,10 +69,31 @@ func (d *Context) PushGoFunc(fn func(*Context) int, nargs int) {
 	// }
 }
 
+//export httpRequest
+func httpRequest(ctx unsafe.Pointer) C.duk_ret_t {
+	c := &Context{ctx}
+	a := c.GetNumber(0)
+	b := c.GetNumber(1)
+	c.PushNumber(a + b)
+	fmt.Printf("httpRequest %#v\n", c)
+	return 1
+}
+
+// func (d *Context) bindHttpFunc() {
+// 	d.PushGlobalObject()
+// 	C.duk_push_c_function(
+// 		d.duk_context,
+// 		C.go_http(),
+// 		C.duk_idx_t(2),
+// 	)
+// 	d.PutPropString(-2, "http")
+// 	d.Pop()
+// }
+
 func (d *Context) pushAddFunction() {
 	C.duk_push_c_function(
 		d.duk_context,
-		C.go_duk_c_function(),
+		C.http_req(),
 		C.duk_idx_t(2),
 	)
 }
@@ -115,7 +122,8 @@ func (d *Context) DestroyHeap() {
 
 // Returns initialized duktape context object
 func NewContext() *Context {
-	return &Context{
+	ctx := &Context{
 		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
 	}
+	return ctx
 }
