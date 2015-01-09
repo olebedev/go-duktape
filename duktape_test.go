@@ -25,7 +25,7 @@ func TestGoFuncCallWOArgs(t *testing.T) {
 func TestGoFuncCallWWrongArg(t *testing.T) {
 	defer func() {
 		r := recover()
-		expect(t, r, "Wrong type of hashName argument")
+		expect(t, r, "Wrong type of function's key argument")
 	}()
 	ctx := NewContext()
 	ctx.EvalString(goFuncCallName + `(0); // first argument must be a string`)

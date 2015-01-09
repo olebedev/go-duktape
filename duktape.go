@@ -65,7 +65,7 @@ func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 	}
 	if !c.GetType(0).IsString() {
 		// unexpected type of function name's hash
-		panic("Wrong type of hashName argument")
+		panic("Wrong type of function's key argument")
 		return C.DUK_RET_EVAL_ERROR
 	}
 	hash := c.GetString(0)
