@@ -6,11 +6,11 @@ static void go_duk_eval_string(duk_context *ctx, const char *str) {
   return duk_eval_string(ctx, str);
 }
 extern duk_ret_t goFuncCall(duk_context *ctx);
+extern duk_ret_t testFunc(duk_context *ctx);
 */
 import "C"
 import "errors"
 import "fmt"
-import "log"
 import "regexp"
 import "time"
 import "unsafe"
@@ -57,7 +57,6 @@ func NewContext() *Context {
 //export goFuncCall
 func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 	c := &Context{ctx}
-	fmt.Printf("goFuncCall with context: %#v\n", c)
 	if c.GetTop() == 0 {
 		// unexpected call, without function name's hash
 		panic("Go function call without arguments is not supported")
@@ -68,11 +67,11 @@ func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 		panic("Wrong type of function's key argument")
 		return C.DUK_RET_EVAL_ERROR
 	}
-	hash := c.GetString(0)
-	if fn, ok := goFuncMap[hash]; ok {
-		return C.duk_ret_t(fn(c))
+	key := c.GetString(0)
+	if fn, ok := goFuncMap[key]; ok {
+		r := fn(c)
+		return C.duk_ret_t(r)
 	}
-	log.Printf("hash is: %s", hash)
 	panic("Unimplemented")
 	return C.DUK_RET_UNIMPLEMENTED_ERROR
 }
@@ -101,9 +100,10 @@ func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
 	key := getKeyFor(name)
 	goFuncMap[key] = fn
 
+	// TODO: apply dot notation names
 	d.EvalString(fmt.Sprintf(`
       function %s (){
-        %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
+        return %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
       };
   `, name, goFuncCallName, key))
 	d.Pop()
@@ -178,4 +178,24 @@ func (d *Context) PutPropString(i int, prop string) {
 
 func (d *Context) DestroyHeap() {
 	C.duk_destroy_heap(d.duk_context)
+}
+
+/**
+ * only for tests
+ */
+func goTestfunc(ctx *Context) int {
+	top := ctx.GetTop()
+	a := ctx.GetNumber(top - 2)
+	b := ctx.GetNumber(top - 1)
+	ctx.PushNumber(a + b)
+	return 1
+}
+
+//export testFunc
+func testFunc(ctx unsafe.Pointer) C.duk_ret_t {
+	return C.duk_ret_t(goTestfunc(&Context{ctx}))
+}
+
+func (d *Context) pushTestFunc() {
+	d.PushCFunction((*[0]byte)(C.testFunc), (-1))
 }

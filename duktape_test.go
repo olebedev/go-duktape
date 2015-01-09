@@ -1,6 +1,5 @@
 package duktape
 
-import "log"
 import "reflect"
 import "testing"
 
@@ -43,7 +42,6 @@ func TestGoFuncCallWWrongFuncName(t *testing.T) {
 }
 
 func TestGofuncCall(t *testing.T) {
-	log.Println("start go func call test")
 	var check bool
 	ctx := NewContext()
 	ctx.PushGoFunc("test", func(c *Context) int {
@@ -51,7 +49,6 @@ func TestGofuncCall(t *testing.T) {
 		return 0
 	})
 	expect(t, len(goFuncMap), 1)
-	log.Printf("goFuncMap is: %#v", goFuncMap)
 	for k, _ := range goFuncMap {
 		ctx.EvalString(goFuncCallName + `('` + k + `');`)
 		expect(t, check, true)
@@ -59,6 +56,31 @@ func TestGofuncCall(t *testing.T) {
 		expect(t, check, false)
 		break
 	}
+	ctx.DestroyHeap()
+}
+
+// from duktape examples
+func TestTestFunc(t *testing.T) {
+	ctx := NewContext()
+	ctx.PushGlobalObject()
+	// in tests it is not possible to use C types
+	ctx.pushTestFunc()
+	ctx.PutPropString(-2, "adder")
+	ctx.Pop()
+	ctx.EvalString(`adder(2, 3);`)
+	res := ctx.GetNumber(-1)
+	ctx.Pop()
+	expect(t, res, float64(5))
+}
+
+func TestMyAddTwo(t *testing.T) {
+	ctx := NewContext()
+	ctx.PushGoFunc("adder", goTestfunc)
+	ctx.EvalString(`print("2 + 3 =", adder(2,3))`)
+	ctx.Pop()
+	ctx.EvalString(`adder(2,3)`)
+	result := ctx.GetNumber(-1)
+	expect(t, result, float64(5))
 	ctx.DestroyHeap()
 }
 
