@@ -92,7 +92,7 @@ func getKeyFor(funcName string) string {
 }
 
 var goFuncMap = map[string]func(*Context) int{}
-var reFuncName = regexp.MustCompile("^[a-z][a-z0-9]*([A-Z][a-z0-9]*)*$")
+var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
 
 func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
 	if !reFuncName.MatchString(name) {
