@@ -164,6 +164,12 @@ func (d *Context) PushNumber(i float64) {
 	C.duk_push_number(d.duk_context, C.duk_double_t(i))
 }
 
+func (d *Context) PushString(str string) {
+	s := C.CString(str)
+	defer C.free(unsafe.Pointer(s))
+	C.duk_push_string(d.duk_context, s)
+}
+
 func (d *Context) PutPropString(i int, prop string) {
 	str := C.CString(prop)
 	defer C.free(unsafe.Pointer(str))
