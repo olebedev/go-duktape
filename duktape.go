@@ -27,7 +27,7 @@ const (
 	DUK_TYPE_POINTER
 )
 
-const go_func_call_name = "__goFuncCall__"
+const goFuncCallName = "__goFuncCall__"
 
 type Type int
 
@@ -95,7 +95,7 @@ func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
       function %s (){
         %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
       };
-  `, name, go_func_call_name, hashed))
+  `, name, goFuncCallName, hashed))
 	d.Pop()
 	return nil
 }
@@ -103,7 +103,7 @@ func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
 func (d *Context) defineGoFuncCall() {
 	d.PushGlobalObject()
 	d.PushCFunction((*[0]byte)(C.goFuncCall), int(C.DUK_VARARGS))
-	d.PutPropString(-2, go_func_call_name)
+	d.PutPropString(-2, goFuncCallName)
 	d.Pop()
 }
 

@@ -18,7 +18,7 @@ func TestGoFuncCallWOArgs(t *testing.T) {
 		expect(t, r, "Go function call without arguments is not supported")
 	}()
 	ctx := NewContext()
-	ctx.EvalString(go_func_call_name + `();`)
+	ctx.EvalString(goFuncCallName + `();`)
 	ctx.DestroyHeap()
 }
 
@@ -28,7 +28,7 @@ func TestGoFuncCallWWrongArg(t *testing.T) {
 		expect(t, r, "Wrong type of hashName argument")
 	}()
 	ctx := NewContext()
-	ctx.EvalString(go_func_call_name + `(0); // first argument must be a string`)
+	ctx.EvalString(goFuncCallName + `(0); // first argument must be a string`)
 	ctx.DestroyHeap()
 }
 
@@ -38,7 +38,7 @@ func TestGoFuncCallWWrongFuncName(t *testing.T) {
 		expect(t, r, "Unimplemented")
 	}()
 	ctx := NewContext()
-	ctx.EvalString(go_func_call_name + `('noFunctionName'); // this func is not defined`)
+	ctx.EvalString(goFuncCallName + `('noFunctionName'); // this func is not defined`)
 	ctx.DestroyHeap()
 }
 
@@ -53,9 +53,9 @@ func TestGofuncCall(t *testing.T) {
 	expect(t, len(goFuncMap), 1)
 	log.Printf("goFuncMap is: %#v", goFuncMap)
 	for k, _ := range goFuncMap {
-		ctx.EvalString(`__goFuncCall__('` + k + `');`)
+		ctx.EvalString(goFuncCallName + `('` + k + `');`)
 		expect(t, check, true)
-		ctx.EvalString(`__goFuncCall__('` + k + `');`)
+		ctx.EvalString(goFuncCallName + `('` + k + `');`)
 		expect(t, check, false)
 		break
 	}
