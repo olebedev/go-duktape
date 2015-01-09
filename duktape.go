@@ -77,8 +77,18 @@ func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 	return C.DUK_RET_UNIMPLEMENTED_ERROR
 }
 
-func hashFor(funcName string) string {
-	return fmt.Sprintf("__%s_%d__", funcName, time.Now().Nanosecond())
+func getKeyFor(funcName string) string {
+	c := 0
+	key := fmt.Sprintf("__%s_%d%d__", funcName, time.Now().Nanosecond(), c)
+	for {
+		if _, ok := goFuncMap[key]; ok {
+			c++
+			key = fmt.Sprintf("__%s_%d%d__", funcName, time.Now().Nanosecond(), c)
+			continue
+		}
+		break
+	}
+	return key
 }
 
 var goFuncMap = map[string]func(*Context) int{}
@@ -88,14 +98,14 @@ func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
 	if !reFuncName.MatchString(name) {
 		return errors.New("Malformed function name '" + name + "'")
 	}
-	hashed := hashFor(name)
-	goFuncMap[hashed] = fn
+	key := getKeyFor(name)
+	goFuncMap[key] = fn
 
 	d.EvalString(fmt.Sprintf(`
       function %s (){
         %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
       };
-  `, name, goFuncCallName, hashed))
+  `, name, goFuncCallName, key))
 	d.Pop()
 	return nil
 }
