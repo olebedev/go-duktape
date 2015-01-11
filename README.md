@@ -29,6 +29,7 @@ func main() {
   ctx := duktape.NewContext()
   ctx.PushGofunc("log", func(ctx *duktape.Context) int {
     fmt.Println("Go lang Go!")
+    return 0
   })
   ctx.EvalString(`log()`)
 }
