@@ -18,8 +18,7 @@ func main() {
 ```
 
 ### Go specific notes
-There is very important that is need to be done. This is bindin betwin Go and Javascript's contexts.
-You can define define written in Go function into Javascript context quite simple. Example usage:
+There is very important that is need to be done. This is binding between Go and Javascript contexts. Now you can define written in Go function into Javascript context quite simple. Example usage:
 ```go
 package main
 
