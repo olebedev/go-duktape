@@ -2,9 +2,6 @@ package duktape
 
 /*
 # include "duktape.h"
-static void go_duk_eval_string(duk_context *ctx, const char *str) {
-  return duk_eval_string(ctx, str);
-}
 extern duk_ret_t goFuncCall(duk_context *ctx);
 extern duk_ret_t testFunc(duk_context *ctx);
 */
@@ -15,6 +12,7 @@ import "regexp"
 import "time"
 import "unsafe"
 
+const goFuncCallName = "__goFuncCall__"
 const (
 	DUK_TYPE_NONE Type = iota
 	DUK_TYPE_UNDEFINED
@@ -26,8 +24,6 @@ const (
 	DUK_TYPE_BUFFER
 	DUK_TYPE_POINTER
 )
-
-const goFuncCallName = "__goFuncCall__"
 
 type Type int
 
@@ -62,7 +58,7 @@ func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 		panic("Go function call without arguments is not supported")
 		return C.DUK_RET_UNSUPPORTED_ERROR
 	}
-	if !c.GetType(0).IsString() {
+	if !Type(c.GetType(0)).IsString() {
 		// unexpected type of function name's hash
 		panic("Wrong type of function's key argument")
 		return C.DUK_RET_EVAL_ERROR
@@ -115,69 +111,6 @@ func (d *Context) defineGoFuncCall() {
 	d.PushCFunction((*[0]byte)(C.goFuncCall), int(C.DUK_VARARGS))
 	d.PutPropString(-2, goFuncCallName)
 	d.Pop()
-}
-
-func (d *Context) GetTop() int {
-	return int(C.duk_get_top(d.duk_context))
-}
-
-func (d *Context) PushCFunction(fn *[0]byte, nargs int) {
-	C.duk_push_c_function(
-		d.duk_context,
-		fn,
-		C.duk_idx_t(nargs),
-	)
-}
-
-func (d *Context) EvalString(script string) {
-	str := C.CString(script)
-	defer C.free(unsafe.Pointer(str))
-	C.go_duk_eval_string(d.duk_context, str)
-}
-
-func (d *Context) Pop() {
-	C.duk_pop(d.duk_context)
-}
-
-func (d *Context) GetType(i int) Type {
-	return Type(C.duk_get_type(d.duk_context, C.duk_idx_t(i)))
-}
-
-func (d *Context) GetString(i int) string {
-	if d.GetType(i).IsString() {
-		if s := C.duk_get_string(d.duk_context, C.duk_idx_t(i)); s != nil {
-			return C.GoString(s)
-		}
-	}
-	return ""
-}
-
-func (d *Context) PushGlobalObject() {
-	C.duk_push_global_object(d.duk_context)
-}
-
-func (d *Context) GetNumber(i int) float64 {
-	return float64(C.duk_get_number(d.duk_context, C.duk_idx_t(i)))
-}
-
-func (d *Context) PushNumber(i float64) {
-	C.duk_push_number(d.duk_context, C.duk_double_t(i))
-}
-
-func (d *Context) PushString(str string) {
-	s := C.CString(str)
-	defer C.free(unsafe.Pointer(s))
-	C.duk_push_string(d.duk_context, s)
-}
-
-func (d *Context) PutPropString(i int, prop string) {
-	str := C.CString(prop)
-	defer C.free(unsafe.Pointer(str))
-	C.duk_put_prop_string(d.duk_context, C.duk_idx_t(i), str)
-}
-
-func (d *Context) DestroyHeap() {
-	C.duk_destroy_heap(d.duk_context)
 }
 
 /**

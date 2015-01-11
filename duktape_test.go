@@ -6,7 +6,7 @@ import "testing"
 func TestEvalString(t *testing.T) {
 	ctx := NewContext()
 	ctx.EvalString(`"Golang love Duktape!"`)
-	expect(t, ctx.GetType(-1).IsString(), true)
+	expect(t, Type(ctx.GetType(-1)).IsString(), true)
 	expect(t, ctx.GetString(-1), "Golang love Duktape!")
 	ctx.DestroyHeap()
 }
