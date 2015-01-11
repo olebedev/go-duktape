@@ -1,7 +1,5 @@
 # Duktape bindings for Go(Golang)
-[Duktape](http://duktape.org/index.html) is thin embedded javascript engine.  
-Mostly all apis are implemented(see [api](http://duktape.org/api.html)).  
-Except several functions, see the list [here](https://github.com/olebedev/go-duktape).
+[Duktape](http://duktape.org/index.html) is thin embedded javascript engine. Mostly all apis are implemented(see [api](http://duktape.org/api.html)). Except several functions, see the list [here](https://github.com/olebedev/go-duktape/blob/master/api.go#L1294).
 
 ### Usage
 ```go
@@ -43,8 +41,7 @@ $ Go lang Go!
 ```
 
 ### Status
-Not fully tested, be careful. Basically, there is nothin to be break.  
-Additional functionality tested.
+Not fully tested, be careful. Basically, there is nothing to be break. Additional functionality tested.
 
 ### Contribution
 PR's are welcome!
