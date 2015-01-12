@@ -1,6 +1,8 @@
 package duktape
 
 /*
+#cgo linux LDFLAGS: -lm
+
 # include "duktape.h"
 extern duk_ret_t goFuncCall(duk_context *ctx);
 extern duk_ret_t testFunc(duk_context *ctx);
