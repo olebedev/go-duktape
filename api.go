@@ -119,15 +119,9 @@ static void _duk_xcopy_top(duk_context *to_ctx, duk_context *from_ctx, duk_idx_t
 static void _duk_xmove_top(duk_context *to_ctx, duk_context *from_ctx, duk_idx_t count) {
 	return duk_xmove_top(to_ctx, from_ctx, count);
 }
-// extern long boolToLong(bool value);
 */
 import "C"
 import "unsafe"
-
-// export boolToLong
-// func boolToLong(value unsa) {
-//
-// }
 
 // See: http://duktape.org/api.html#duk_alloc
 func (d *Context) Alloc(size int) {
@@ -367,12 +361,6 @@ func (d *Context) GetBoolean(index int) bool {
 func (d *Context) GetBuffer(index int, outSize int) {
 	C.duk_get_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
-
-// TODO
-// See: http://duktape.org/api.html#duk_get_c_function
-// func (d *Context) GetCFunction(index int) *[0]byte {
-// 	return *[0]byte(C.duk_get_c_function(d.duk_context, C.duk_idx_t(index)))
-// }
 
 // See: http://duktape.org/api.html#duk_get_context
 func (d *Context) GetContext(index int) *Context {
@@ -881,13 +869,15 @@ func (d *Context) PushInt(val int) {
 	C.duk_push_int(d.duk_context, C.duk_int_t(val))
 }
 
-// TODO
 // See: http://duktape.org/api.html#duk_push_lstring
-// func (d *Context) PushLstring(str string, len int) string {
-// 	__str__ := C.CString(str)
-// 	defer C.free(unsafe.Pointer(__str__))
-// 	return string(C.duk_push_lstring(d.duk_context, __str__, C.duk_size_t(len)))
-// }
+func (d *Context) PushLstring(str string, len int) string {
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	if s := C.duk_push_lstring(d.duk_context, __str__, C.duk_size_t(len)); s != nil {
+		return C.GoString(s)
+	}
+	return ""
+}
 
 // See: http://duktape.org/api.html#duk_push_nan
 func (d *Context) PushNan() {
@@ -1009,12 +999,6 @@ func (d *Context) RequireBuffer(index int, outSize int) {
 	C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
-// TODO
-// See: http://duktape.org/api.html#duk_require_c_function
-// func (d *Context) RequireCFunction(index int) *[0]byte {
-// 	return *[0]byte(C.duk_require_c_function(d.duk_context, C.duk_idx_t(index)))
-// }
-
 // See: http://duktape.org/api.html#duk_require_context
 func (d *Context) RequireContext(index int) *Context {
 	return &Context{C.duk_require_context(d.duk_context, C.duk_idx_t(index))}
@@ -1106,11 +1090,15 @@ func (d *Context) ResizeBuffer(index int, newSize int) {
 	C.duk_resize_buffer(d.duk_context, C.duk_idx_t(index), C.duk_size_t(newSize))
 }
 
-// TODO
 // See: http://duktape.org/api.html#duk_safe_call
-// func (d *Context) SafeCall() int {
-// 	return int(C.duk_safe_call(d.duk_context))
-// }
+func (d *Context) SafeCall(fn *[0]byte, nargs, nrets int) int {
+	return int(C.duk_safe_call(
+		d.duk_context,
+		fn,
+		C.duk_idx_t(nargs),
+		C.duk_idx_t(nrets),
+	))
+}
 
 // See: http://duktape.org/api.html#duk_safe_to_lstring
 func (d *Context) SafeToLstring(index int, outLen int) string {
@@ -1292,21 +1280,24 @@ func (d *Context) XmoveTop(fromCtx *Context, count int) {
 
 /**
  * Unimplemented.
+ *
+ * CharCodeAt see: http://duktape.org/api.html#duk_char_code_at
+ * CreateHeap see: http://duktape.org/api.html#duk_create_heap
+ * CreateHeapDefault see: http://duktape.org/api.html#duk_create_heap_default
+ * DecodeString see: http://duktape.org/api.html#duk_decode_string
+ * Error see: http://duktape.org/api.html#duk_error
+ * Free see: http://duktape.org/api.html#duk_free
+ * FreeRaw see: http://duktape.org/api.html#duk_free_raw
+ * GetMemoryFunctions see: http://duktape.org/api.html#duk_get_memory_functions
+ * MapString see: http://duktape.org/api.html#duk_map_string
+ * PushErrorObject see: http://duktape.org/api.html#duk_push_error_object
+ * PushPointer see: http://duktape.org/api.html#duk_push_pointer
+ * PushSprintf see: http://duktape.org/api.html#duk_push_sprintf
+ * PushVsprintf see: http://duktape.org/api.html#duk_push_vsprintf
+ * PutFunctionList see: http://duktape.org/api.html#duk_put_function_list
+ * PutNumberList see: http://duktape.org/api.html#duk_put_number_list
+ * Realloc see: http://duktape.org/api.html#duk_realloc
+ * ReallocRaw see: http://duktape.org/api.html#duk_realloc_raw
+ * GetCFunction see: http://duktape.org/api.html#duk_get_c_function
+ * RequireCFunction see: http://duktape.org/api.html#duk_require_c_function
  */
-//  CharCodeAt see: http://duktape.org/api.html#duk_char_code_at
-//  CreateHeap see: http://duktape.org/api.html#duk_create_heap
-//  CreateHeapDefault see: http://duktape.org/api.html#duk_create_heap_default
-//  DecodeString see: http://duktape.org/api.html#duk_decode_string
-//  Error see: http://duktape.org/api.html#duk_error
-//  Free see: http://duktape.org/api.html#duk_free
-//  FreeRaw see: http://duktape.org/api.html#duk_free_raw
-//  GetMemoryFunctions see: http://duktape.org/api.html#duk_get_memory_functions
-//  MapString see: http://duktape.org/api.html#duk_map_string
-//  PushErrorObject see: http://duktape.org/api.html#duk_push_error_object
-//  PushPointer see: http://duktape.org/api.html#duk_push_pointer
-//  PushSprintf see: http://duktape.org/api.html#duk_push_sprintf
-//  PushVsprintf see: http://duktape.org/api.html#duk_push_vsprintf
-//  PutFunctionList see: http://duktape.org/api.html#duk_put_function_list
-//  PutNumberList see: http://duktape.org/api.html#duk_put_number_list
-//  Realloc see: http://duktape.org/api.html#duk_realloc
-//  ReallocRaw see: http://duktape.org/api.html#duk_realloc_raw
