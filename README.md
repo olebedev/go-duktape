@@ -1,4 +1,4 @@
-# Duktape bindings for Go(Golang)
+# Duktape bindings for Go(Golang) [![wercker status](https://app.wercker.com/status/8f7563013d2fcf2390b014762c2d5100/s/master "wercker status")](https://app.wercker.com/project/bykey/8f7563013d2fcf2390b014762c2d5100)
 [Duktape](http://duktape.org/index.html) is a thin, embeddable javascript engine.
 Most of the [api](http://duktape.org/api.html) is implemented.
 The exceptions are listed [here](https://github.com/olebedev/go-duktape/blob/master/api.go#L1294).
