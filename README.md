@@ -13,7 +13,7 @@ import "github.com/olebedev/go-duktape"
 func main() {
   ctx := duktape.NewContext()
   ctx.EvalString(`2 + 3`)
-  result = ctx.GetNumber(-1)
+  result := ctx.GetNumber(-1)
   ctx.Pop()
   fmt.Println("result is:", result)
 }
