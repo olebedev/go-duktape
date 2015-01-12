@@ -1,6 +1,6 @@
 # Duktape bindings for Go(Golang)
 [Duktape](http://duktape.org/index.html) is a thin, embeddable javascript engine.
-Mostly of the [api](http://duktape.org/api.html) is implemented.
+Most of the [api](http://duktape.org/api.html) is implemented.
 The exceptions are listed [here](https://github.com/olebedev/go-duktape/blob/master/api.go#L1294).
 
 ### Usage
