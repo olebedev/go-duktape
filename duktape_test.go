@@ -63,7 +63,6 @@ func TestGofuncCall(t *testing.T) {
 func TestTestFunc(t *testing.T) {
 	ctx := NewContext()
 	ctx.PushGlobalObject()
-	// in tests it is not possible to use C types
 	ctx.pushTestFunc()
 	ctx.PutPropString(-2, "adder")
 	ctx.Pop()
