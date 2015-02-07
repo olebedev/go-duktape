@@ -8,9 +8,6 @@ static void _duk_eval_string(duk_context *ctx, const char *str) {
 static void _duk_compile(duk_context *ctx, duk_uint_t flags) {
   return duk_compile(ctx, flags);
 }
-static void _duk_compile_file(duk_context *ctx, duk_uint_t flags, const char *path) {
-  return duk_compile_file(ctx, flags, path);
-}
 static void _duk_compile_lstring(duk_context *ctx, duk_uint_t flags, const char *src, duk_size_t len) {
 	return duk_compile_lstring(ctx, flags, src, len);
 }
@@ -32,12 +29,6 @@ static void _duk_dump_context_stdout(duk_context *ctx) {
 static void _duk_eval(duk_context *ctx) {
 	return duk_eval(ctx);
 }
-static void _duk_eval_file(duk_context *ctx, const char *path) {
-	return duk_eval_file(ctx, path);
-}
-static void _duk_eval_file_noresult(duk_context *ctx, const char *path) {
-	return duk_eval_file_noresult(ctx, path);
-}
 static void _duk_eval_lstring(duk_context *ctx, const char *src, duk_size_t len) {
 	return duk_eval_lstring(ctx, src, len);
 }
@@ -56,9 +47,6 @@ static duk_bool_t _duk_is_object_coercible(duk_context *ctx, duk_idx_t index) {
 static duk_int_t _duk_pcompile(duk_context *ctx, duk_uint_t flags) {
 	return duk_pcompile(ctx, flags);
 }
-static duk_int_t _duk_pcompile_file(duk_context *ctx, duk_uint_t flags, const char *path) {
-	return duk_pcompile_file(ctx, flags, path);
-}
 static duk_int_t _duk_pcompile_lstring(duk_context *ctx, duk_uint_t flags, const char *src, duk_size_t len) {
 	return duk_pcompile_lstring(ctx, flags, src, len);
 }
@@ -74,12 +62,6 @@ static duk_int_t _duk_pcompile_string_filename(duk_context *ctx, duk_uint_t flag
 static duk_int_t _duk_peval(duk_context *ctx) {
 	return duk_peval(ctx);
 }
-static duk_int_t _duk_peval_file(duk_context *ctx, const char *path) {
-	return duk_peval_file(ctx, path);
-}
-static duk_int_t _duk_peval_file_noresult(duk_context *ctx, const char *path) {
-	return duk_peval_file_noresult(ctx, path);
-}
 static duk_int_t _duk_peval_lstring(duk_context *ctx, const char *src, duk_size_t len) {
 	return duk_peval_lstring(ctx, src, len);
 }
@@ -94,9 +76,6 @@ static duk_int_t _duk_peval_string(duk_context *ctx, const char *src) {
 }
 static duk_int_t _duk_peval_string_noresult(duk_context *ctx, const char *src) {
 	return duk_peval_string_noresult(ctx, src);
-}
-static const char *_duk_push_string_file(duk_context *ctx, const char *path) {
-	return duk_push_string_file(ctx, path);
 }
 static duk_idx_t _duk_push_thread(duk_context *ctx) {
 	return duk_push_thread(ctx);
@@ -191,26 +170,22 @@ func (d *Context) Compile(flags uint) {
 	C._duk_compile(d.duk_context, C.duk_uint_t(flags))
 }
 
-// See: http://duktape.org/api.html#duk_compile_file
-func (d *Context) CompileFile(flags uint, path string) {
-	__path__ := C.CString(path)
-	defer C.free(unsafe.Pointer(__path__))
-	C._duk_compile_file(d.duk_context, C.duk_uint_t(flags), __path__)
-}
-
 // See: http://duktape.org/api.html#duk_compile_lstring
-func (d *Context) CompileLstring(flags uint, src string, len int) {
+func (d *Context) CompileLstring(flags uint, src string) {
 	__src__ := C.CString(src)
+	srcLen := len(src)
 	defer C.free(unsafe.Pointer(__src__))
-	C._duk_compile_lstring(d.duk_context, C.duk_uint_t(flags), __src__, C.duk_size_t(len))
+	C._duk_compile_lstring(d.duk_context, C.duk_uint_t(flags), __src__, C.duk_size_t(srcLen))
 }
 
+/*  No ambient authority, please.
 // See: http://duktape.org/api.html#duk_compile_lstring_filename
 func (d *Context) CompileLstringFilename(flags uint, src string, len int) {
 	__src__ := C.CString(src)
 	defer C.free(unsafe.Pointer(__src__))
 	C._duk_compile_lstring_filename(d.duk_context, C.duk_uint_t(flags), __src__, C.duk_size_t(len))
 }
+*/
 
 // See: http://duktape.org/api.html#duk_compile_string
 func (d *Context) CompileString(flags uint, src string) {
@@ -291,20 +266,6 @@ func (d *Context) Equals(index1 int, index2 int) bool {
 // See: http://duktape.org/api.html#duk_eval
 func (d *Context) Eval() {
 	C._duk_eval(d.duk_context)
-}
-
-// See: http://duktape.org/api.html#duk_eval_file
-func (d *Context) EvalFile(path string) {
-	__path__ := C.CString(path)
-	defer C.free(unsafe.Pointer(__path__))
-	C._duk_eval_file(d.duk_context, __path__)
-}
-
-// See: http://duktape.org/api.html#duk_eval_file_noresult
-func (d *Context) EvalFileNoresult(path string) {
-	__path__ := C.CString(path)
-	defer C.free(unsafe.Pointer(__path__))
-	C._duk_eval_file_noresult(d.duk_context, __path__)
 }
 
 // See: http://duktape.org/api.html#duk_eval_lstring
@@ -684,13 +645,6 @@ func (d *Context) Pcompile(flags uint) int {
 	return int(C._duk_pcompile(d.duk_context, C.duk_uint_t(flags)))
 }
 
-// See: http://duktape.org/api.html#duk_pcompile_file
-func (d *Context) PcompileFile(flags uint, path string) int {
-	__path__ := C.CString(path)
-	defer C.free(unsafe.Pointer(__path__))
-	return int(C._duk_pcompile_file(d.duk_context, C.duk_uint_t(flags), __path__))
-}
-
 // See: http://duktape.org/api.html#duk_pcompile_lstring
 func (d *Context) PcompileLstring(flags uint, src string, len int) int {
 	__src__ := C.CString(src)
@@ -722,20 +676,6 @@ func (d *Context) PcompileStringFilename(flags uint, src string) int {
 // See: http://duktape.org/api.html#duk_peval
 func (d *Context) Peval() int {
 	return int(C._duk_peval(d.duk_context))
-}
-
-// See: http://duktape.org/api.html#duk_peval_file
-func (d *Context) PevalFile(path string) int {
-	__path__ := C.CString(path)
-	defer C.free(unsafe.Pointer(__path__))
-	return int(C._duk_peval_file(d.duk_context, __path__))
-}
-
-// See: http://duktape.org/api.html#duk_peval_file_noresult
-func (d *Context) PevalFileNoresult(path string) int {
-	__path__ := C.CString(path)
-	defer C.free(unsafe.Pointer(__path__))
-	return int(C._duk_peval_file_noresult(d.duk_context, __path__))
 }
 
 // See: http://duktape.org/api.html#duk_peval_lstring
@@ -904,17 +844,6 @@ func (d *Context) PushString(str string) string {
 	__str__ := C.CString(str)
 	defer C.free(unsafe.Pointer(__str__))
 	if s := C.duk_push_string(d.duk_context, __str__); s != nil {
-		return C.GoString(s)
-	}
-	return ""
-}
-
-// TODO: return string
-// See: http://duktape.org/api.html#duk_push_string_file
-func (d *Context) PushStringFile(path string) string {
-	__path__ := C.CString(path)
-	defer C.free(unsafe.Pointer(__path__))
-	if s := C._duk_push_string_file(d.duk_context, __path__); s != nil {
 		return C.GoString(s)
 	}
 	return ""
