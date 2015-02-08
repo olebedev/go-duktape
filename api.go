@@ -374,8 +374,8 @@ func (d *Context) GetNumber(index int) float64 {
 }
 
 // See: http://duktape.org/api.html#duk_get_pointer
-func (d *Context) GetPointer(index int) {
-	C.duk_get_pointer(d.duk_context, C.duk_idx_t(index))
+func (d *Context) GetPointer(index int) unsafe.Pointer {
+	return C.duk_get_pointer(d.duk_context, C.duk_idx_t(index))
 }
 
 // See: http://duktape.org/api.html#duk_get_prop
@@ -1207,6 +1207,11 @@ func (d *Context) XmoveTop(fromCtx *Context, count int) {
 	C._duk_xmove_top(d.duk_context, fromCtx.duk_context, C.duk_idx_t(count))
 }
 
+// See: http://duktape.org/api.html#duk_push_pointer
+func (d *Context) PushPointer(p unsafe.Pointer) {
+	C.duk_push_pointer(d.duk_context, p)
+}
+
 /**
  * Unimplemented.
  *
@@ -1220,7 +1225,6 @@ func (d *Context) XmoveTop(fromCtx *Context, count int) {
  * GetMemoryFunctions see: http://duktape.org/api.html#duk_get_memory_functions
  * MapString see: http://duktape.org/api.html#duk_map_string
  * PushErrorObject see: http://duktape.org/api.html#duk_push_error_object
- * PushPointer see: http://duktape.org/api.html#duk_push_pointer
  * PushSprintf see: http://duktape.org/api.html#duk_push_sprintf
  * PushVsprintf see: http://duktape.org/api.html#duk_push_vsprintf
  * PutFunctionList see: http://duktape.org/api.html#duk_put_function_list
