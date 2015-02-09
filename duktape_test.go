@@ -69,6 +69,38 @@ func TestMyAddTwo(t *testing.T) {
 	res := ctx.GetNumber(-1)
 	ctx.Pop()
 	expect(t, res, float64(5))
+	ctx.DestroyHeap()
+}
+
+
+func TestGoClosure(t *testing.T) {
+	sharedState := 0
+	obj := MethodSuite{
+		"inc": func(d *Context) int {
+			sharedState++
+			d.PushInt(sharedState)
+			return 1
+		},
+		"dec": func(d *Context) int {
+			sharedState--
+			d.PushInt(sharedState)
+			return 1
+		},
+	}
+
+	ctx := NewContext()
+
+	ctx.EvalWith(`
+            (function(o) {
+                 o.inc();
+                 o.inc();
+                 o.dec();
+                 o.inc();
+                 return o.inc();
+             })`, obj)
+	res := ctx.GetNumber(-1)
+	expect(t, res, float64(3))
+	ctx.DestroyHeap()
 }
 
 func expect(t *testing.T, a interface{}, b interface{}) {
