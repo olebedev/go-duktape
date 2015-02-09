@@ -4,17 +4,13 @@ package duktape
 #cgo linux LDFLAGS: -lm
 
 # include "duktape.h"
-extern duk_ret_t goFuncCall(duk_context *ctx);
-extern duk_ret_t testFunc(duk_context *ctx);
+extern duk_ret_t goCall(duk_context *ctx);
 */
 import "C"
 import "errors"
-import "fmt"
-import "regexp"
-import "time"
 import "unsafe"
 
-const goFuncCallName = "__goFuncCall__"
+const goFuncProp = "goFuncData"
 const (
 	DUK_TYPE_NONE Type = iota
 	DUK_TYPE_UNDEFINED
@@ -46,91 +42,70 @@ type Context struct {
 // Returns initialized duktape context object
 func NewContext() *Context {
 	ctx := &Context{
+		// TODO: "A caller SHOULD implement a fatal error handler in most applications."
 		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
 	}
-	ctx.defineGoFuncCall()
 	return ctx
 }
 
-//export goFuncCall
-func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
-	c := &Context{ctx}
-	if c.GetTop() == 0 {
-		// unexpected call, without function name's hash
-		panic("Go function call without arguments is not supported")
-		return C.DUK_RET_UNSUPPORTED_ERROR
-	}
-	if !Type(c.GetType(0)).IsString() {
-		// unexpected type of function name's hash
-		panic("Wrong type of function's key argument")
-		return C.DUK_RET_EVAL_ERROR
-	}
-	key := c.GetString(0)
-	if fn, ok := goFuncMap[key]; ok {
-		r := fn(c)
-		return C.duk_ret_t(r)
-	}
-	panic("Unimplemented")
-	return C.DUK_RET_UNIMPLEMENTED_ERROR
-}
+//export goCall
+func goCall(ctx unsafe.Pointer) C.duk_ret_t {
+	d := &Context{ctx}
 
-func getKeyFor(funcName string) string {
-	c := 0
-	key := fmt.Sprintf("__%s_%d%d__", funcName, time.Now().Nanosecond(), c)
-	for {
-		if _, ok := goFuncMap[key]; ok {
-			c++
-			key = fmt.Sprintf("__%s_%d%d__", funcName, time.Now().Nanosecond(), c)
-			continue
-		}
-		break
-	}
-	return key
-}
-
-var goFuncMap = map[string]func(*Context) int{}
-var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
-
-func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
-	if !reFuncName.MatchString(name) {
-		return errors.New("Malformed function name '" + name + "'")
-	}
-	key := getKeyFor(name)
-	goFuncMap[key] = fn
-
-	// TODO: apply dot notation names
-	d.EvalString(fmt.Sprintf(`
-      function %s (){
-        return %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
-      };
-  `, name, goFuncCallName, key))
+	/*
+	d.PushContextDump()
+	log.Printf("goCall context: %s", d.GetString(-1))
 	d.Pop()
+        */
+
+	d.PushCurrentFunction()
+	d.GetPropString(-1, goFuncProp)
+	if ! Type(d.GetType(-1)).IsPointer() {
+		d.Pop2()
+		return C.duk_ret_t(C.DUK_RET_TYPE_ERROR)
+	}
+	fd := (*GoFuncData)(d.GetPointer(-1))
+	d.Pop2()
+
+	return C.duk_ret_t(fd.f(d))
+}
+
+type GoFunc func (d *Context) int
+type GoFuncData struct {
+	f GoFunc
+}
+
+// Push goCall with its "goFuncData" property set to fd
+func (d *Context) pushGoFunc(fd *GoFuncData) {
+	d.PushCFunction((*[0]byte)(C.goCall), 2)
+	d.PushPointer(unsafe.Pointer(fd))
+	d.PutPropString(-2, goFuncProp)
+}
+
+
+type MethodSuite map[string]GoFunc
+
+func (d *Context) EvalWith(source string, suite MethodSuite) error {
+	if err := d.PevalString(source); err != 0 {
+		return errors.New(d.SafeToString(-1))
+	}
+
+	d.PushObject()
+
+	// Make sure we keep references to all the GoFuncData
+	suiteData := make(map[string]*GoFuncData)
+	for prop, f := range suite {
+		suiteData[prop] = &GoFuncData{f}
+	}
+
+	for prop, fd := range suiteData {
+		d.pushGoFunc(fd)
+		d.PutPropString(-2, prop)
+	}
+
+	if err := d.Pcall(1); err != 0 {
+		return errors.New(d.SafeToString(-1))
+	}
+
 	return nil
-}
-
-func (d *Context) defineGoFuncCall() {
-	d.PushGlobalObject()
-	d.PushCFunction((*[0]byte)(C.goFuncCall), int(C.DUK_VARARGS))
-	d.PutPropString(-2, goFuncCallName)
-	d.Pop()
-}
-
-/**
- * only for tests
- */
-func goTestfunc(ctx *Context) int {
-	top := ctx.GetTop()
-	a := ctx.GetNumber(top - 2)
-	b := ctx.GetNumber(top - 1)
-	ctx.PushNumber(a + b)
-	return 1
-}
-
-//export testFunc
-func testFunc(ctx unsafe.Pointer) C.duk_ret_t {
-	return C.duk_ret_t(goTestfunc(&Context{ctx}))
-}
-
-func (d *Context) pushTestFunc() {
-	d.PushCFunction((*[0]byte)(C.testFunc), (-1))
 }

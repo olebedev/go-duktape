@@ -11,76 +11,64 @@ func TestEvalString(t *testing.T) {
 	ctx.DestroyHeap()
 }
 
-func TestGoFuncCallWOArgs(t *testing.T) {
-	defer func() {
-		r := recover()
-		expect(t, r, "Go function call without arguments is not supported")
-	}()
+
+func TestEvalFunc(t *testing.T) {
 	ctx := NewContext()
-	ctx.EvalString(goFuncCallName + `();`)
+	ctx.PevalString(`(function (x) { return x + x; })`)
+	expect(t, ctx.IsCallable(-1), true)
+	expect(t, Type(ctx.GetType(-1)).IsObject(), true)
+	ctx.PushInt(5)
+	ctx.Pcall(1)
+	expect(t, ctx.GetInt(-1), 10)
 	ctx.DestroyHeap()
 }
 
-func TestGoFuncCallWWrongArg(t *testing.T) {
-	defer func() {
-		r := recover()
-		expect(t, r, "Wrong type of function's key argument")
-	}()
+func TestEvalWith(t *testing.T) {
 	ctx := NewContext()
-	ctx.EvalString(goFuncCallName + `(0); // first argument must be a string`)
-	ctx.DestroyHeap()
-}
 
-func TestGoFuncCallWWrongFuncName(t *testing.T) {
-	defer func() {
-		r := recover()
-		expect(t, r, "Unimplemented")
-	}()
-	ctx := NewContext()
-	ctx.EvalString(goFuncCallName + `('noFunctionName'); // this func is not defined`)
-	ctx.DestroyHeap()
-}
-
-func TestGofuncCall(t *testing.T) {
-	var check bool
-	ctx := NewContext()
-	ctx.PushGoFunc("test", func(c *Context) int {
-		check = !check
-		return 0
-	})
-	expect(t, len(goFuncMap), 1)
-	for k, _ := range goFuncMap {
-		ctx.EvalString(goFuncCallName + `('` + k + `');`)
-		expect(t, check, true)
-		ctx.EvalString(goFuncCallName + `('` + k + `');`)
-		expect(t, check, false)
-		break
+	obj := MethodSuite{
+		"hi": func(d *Context) int {
+			d.PushString("hi!")
+			return 1
+		},
 	}
+	err := ctx.EvalWith("(function(o) { return o.hi(1, 2, 3) })", obj)
+	expect(t, err, nil)
+
+	actual := ctx.GetString(-1)
+
+	expect(t, actual, "hi!")
+
 	ctx.DestroyHeap()
 }
+
 
 // from duktape examples
-func TestTestFunc(t *testing.T) {
+
+
+func TestMyAddTwo(t *testing.T) {
+	obj := MethodSuite{
+		"add": func(d *Context) int {
+			top := d.GetTop()
+			a := d.GetNumber(top - 2)
+			b := d.GetNumber(top - 1)
+			d.PushNumber(a + b)
+			return 1
+		},
+	}
+
 	ctx := NewContext()
 	ctx.PushGlobalObject()
-	ctx.pushTestFunc()
+
+	// Hmm... a property value can outlive an object. look out!
+	ctx.EvalWith("(function(o) { return o.add })", obj)
+
 	ctx.PutPropString(-2, "adder")
-	ctx.Pop()
-	ctx.EvalString(`adder(2, 3);`)
+
+	ctx.PevalString(`adder(2, 3);`)
 	res := ctx.GetNumber(-1)
 	ctx.Pop()
 	expect(t, res, float64(5))
-}
-
-func TestMyAddTwo(t *testing.T) {
-	ctx := NewContext()
-	ctx.PushGoFunc("adder", goTestfunc)
-	ctx.EvalString(`print("2 + 3 =", adder(2,3))`)
-	ctx.Pop()
-	ctx.EvalString(`adder(2,3)`)
-	result := ctx.GetNumber(-1)
-	expect(t, result, float64(5))
-	ctx.DestroyHeap()
 }
 
 func expect(t *testing.T, a interface{}, b interface{}) {
