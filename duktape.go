@@ -77,7 +77,7 @@ type GoFuncData struct {
 
 // Push goCall with its "goFuncData" property set to fd
 func (d *Context) pushGoFunc(fd *GoFuncData) {
-	d.PushCFunction((*[0]byte)(C.goCall), 2)
+	d.PushCFunction((*[0]byte)(C.goCall), C.DUK_VARARGS)
 	d.PushPointer(unsafe.Pointer(fd))
 	d.PutPropString(-2, goFuncProp)
 }

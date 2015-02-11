@@ -28,7 +28,8 @@ func TestEvalWith(t *testing.T) {
 
 	obj := MethodSuite{
 		"hi": func(d *Context) int {
-			d.PushString("hi!")
+			x := d.GetInt(-2)
+			d.PushString("hi! " + string(48 + x))
 			return 1
 		},
 	}
@@ -37,7 +38,7 @@ func TestEvalWith(t *testing.T) {
 
 	actual := ctx.GetString(-1)
 
-	expect(t, actual, "hi!")
+	expect(t, actual, "hi! 2")
 
 	ctx.DestroyHeap()
 }
