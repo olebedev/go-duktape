@@ -59,6 +59,32 @@ func TestGofuncCall(t *testing.T) {
 	ctx.DestroyHeap()
 }
 
+func expectError(t *testing.T, ctx *Context, code int, errMsg string) {
+	if !ctx.IsError(-1) {
+		t.Errorf("Expected Error type, got %v", ctx.GetType(-1))
+	}
+
+	if got := ctx.GetErrorCode(-1); code != code {
+		t.Errorf("Expected error %#v, got %#v", code, got)
+	}
+
+	if msg := ctx.SafeToString(-1); msg != errMsg {
+		t.Errorf("Expected message %q, got %q", errMsg, msg)
+	}
+}
+
+func TestErrorObj(t *testing.T) {
+	ctx := NewContext()
+	defer ctx.DestroyHeap()
+	ctx.PushErrorObject(ErrType, "Got an error thingy: ", 5)
+	expectError(t, ctx, ErrType, "TypeError: Got an error thingy: 5")
+
+	ctx = NewContext()
+	defer ctx.DestroyHeap()
+	ctx.PushErrorObjectf(ErrURI, "Got an error thingy: %x", 0xdeadbeef)
+	expectError(t, ctx, ErrURI, "URIError: Got an error thingy: deadbeef")
+}
+
 func pushTestFunc(d *Context) {
 	d.PushCFunction((*[0]byte)(testFuncPtr), (-1))
 }
