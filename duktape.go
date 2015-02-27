@@ -251,6 +251,6 @@ func testFunc(ctx unsafe.Pointer) C.duk_ret_t {
 	return C.duk_ret_t(goTestfunc(&Context{ctx}))
 }
 
-func (d *Context) pushTestFunc() {
-	d.PushCFunction((*[0]byte)(C.testFunc), (-1))
-}
+var testFuncPtr = C.testFunc
+
+// vim: set ft=go ts=8 sw=8 tw=79 sts=0 fo=crqn1j noet sta :

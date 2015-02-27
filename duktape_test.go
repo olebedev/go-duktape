@@ -59,11 +59,15 @@ func TestGofuncCall(t *testing.T) {
 	ctx.DestroyHeap()
 }
 
+func pushTestFunc(d *Context) {
+	d.PushCFunction((*[0]byte)(testFuncPtr), (-1))
+}
+
 // from duktape examples
 func TestTestFunc(t *testing.T) {
 	ctx := NewContext()
 	ctx.PushGlobalObject()
-	ctx.pushTestFunc()
+	pushTestFunc(ctx)
 	ctx.PutPropString(-2, "adder")
 	ctx.Pop()
 	ctx.EvalString(`adder(2, 3);`)
