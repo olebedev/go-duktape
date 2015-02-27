@@ -283,6 +283,11 @@ func (d *Context) DelPropString(objIndex int, key string) bool {
 	return int(C.duk_del_prop_string(d.duk_context, C.duk_idx_t(objIndex), __key__)) == 1
 }
 
+// See: http://duktape.org/api.html#duk_def_prop
+func (d *Context) DefProp(objIndex int, flags uint) {
+	C.duk_def_prop(d.duk_context, C.duk_idx_t(objIndex), C.duk_uint_t(flags))
+}
+
 // See: http://duktape.org/api.html#duk_destroy_heap
 func (d *Context) DestroyHeap() {
 	C.duk_destroy_heap(d.duk_context)
@@ -442,6 +447,11 @@ func (d *Context) GetGlobalString(key string) bool {
 	__key__ := C.CString(key)
 	defer C.free(unsafe.Pointer(__key__))
 	return int(C.duk_get_global_string(d.duk_context, __key__)) == 1
+}
+
+// See: http://duktape.org/api.html#duk_get_heapptr
+func (d *Context) GetHeapptr(index int) unsafe.Pointer {
+	return unsafe.Pointer(C.duk_get_heapptr(d.duk_context, C.duk_idx_t(index)))
 }
 
 // See: http://duktape.org/api.html#duk_get_int
@@ -948,6 +958,11 @@ func (d *Context) PushGlobalStash() {
 	C.duk_push_global_stash(d.duk_context)
 }
 
+// See: http://duktape.org/api.html#duk_push_heapptr
+func (d *Context) PushHeapptr(ptr unsafe.Pointer) {
+	C.duk_push_heapptr(d.duk_context, ptr)
+}
+
 // See: http://duktape.org/api.html#duk_push_heap_stash
 func (d *Context) PushHeapStash() {
 	C.duk_push_heap_stash(d.duk_context)
@@ -1091,6 +1106,11 @@ func (d *Context) RequireBuffer(index int, outSize int) {
 // See: http://duktape.org/api.html#duk_require_context
 func (d *Context) RequireContext(index int) *Context {
 	return &Context{C.duk_require_context(d.duk_context, C.duk_idx_t(index))}
+}
+
+// See: http://duktape.org/api.html#duk_require_heapptr
+func (d *Context) RequireHeapptr(index int) unsafe.Pointer {
+	return unsafe.Pointer(C.duk_require_heapptr(d.duk_context, C.duk_idx_t(index)))
 }
 
 // See: http://duktape.org/api.html#duk_require_int
