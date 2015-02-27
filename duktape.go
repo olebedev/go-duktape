@@ -26,18 +26,6 @@ const (
 
 const goFuncCallName = "__goFuncCall__"
 const (
-	DUK_TYPE_NONE Type = iota
-	DUK_TYPE_UNDEFINED
-	DUK_TYPE_NULL
-	DUK_TYPE_BOOLEAN
-	DUK_TYPE_NUMBER
-	DUK_TYPE_STRING
-	DUK_TYPE_OBJECT
-	DUK_TYPE_BUFFER
-	DUK_TYPE_POINTER
-)
-
-const (
 	TypeNone Type = iota
 	TypeUndefined
 	TypeNull
@@ -133,15 +121,16 @@ const (
 
 type Type int
 
-func (t Type) IsNone() bool      { return t == DUK_TYPE_NONE }
-func (t Type) IsUndefined() bool { return t == DUK_TYPE_UNDEFINED }
-func (t Type) IsNull() bool      { return t == DUK_TYPE_NULL }
-func (t Type) IsBool() bool      { return t == DUK_TYPE_BOOLEAN }
-func (t Type) IsNumber() bool    { return t == DUK_TYPE_NUMBER }
-func (t Type) IsString() bool    { return t == DUK_TYPE_STRING }
-func (t Type) IsObject() bool    { return t == DUK_TYPE_OBJECT }
-func (t Type) IsBuffer() bool    { return t == DUK_TYPE_BUFFER }
-func (t Type) IsPointer() bool   { return t == DUK_TYPE_POINTER }
+func (t Type) IsNone() bool      { return t == TypeNone }
+func (t Type) IsUndefined() bool { return t == TypeUndefined }
+func (t Type) IsNull() bool      { return t == TypeNull }
+func (t Type) IsBool() bool      { return t == TypeBoolean }
+func (t Type) IsNumber() bool    { return t == TypeNumber }
+func (t Type) IsString() bool    { return t == TypeString }
+func (t Type) IsObject() bool    { return t == TypeObject }
+func (t Type) IsBuffer() bool    { return t == TypeBuffer }
+func (t Type) IsPointer() bool   { return t == TypePointer }
+func (t Type) IsLightFunc() bool { return t == TypeLightFunc }
 
 type Context struct {
 	duk_context unsafe.Pointer
