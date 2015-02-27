@@ -50,6 +50,9 @@ static void _duk_eval_noresult(duk_context *ctx) {
 static void _duk_eval_string_noresult(duk_context *ctx, const char *src) {
 	return duk_eval_string_noresult(ctx, src);
 }
+static duk_bool_t _duk_is_error(duk_context *ctx, duk_idx_t index) {
+	return duk_is_error(ctx, index);
+}
 static duk_bool_t _duk_is_object_coercible(duk_context *ctx, duk_idx_t index) {
 	return duk_is_object_coercible(ctx, index);
 }
@@ -390,6 +393,12 @@ func (d *Context) GetCurrentMagic() int {
 	return int(C.duk_get_current_magic(d.duk_context))
 }
 
+// See: http://duktape.org/api.html#duk_get_error_code
+func (d *Context) GetErrorCode(index int) int {
+	code := int(C.duk_get_error_code(d.duk_context, C.duk_idx_t(index)))
+	return code
+}
+
 // See: http://duktape.org/api.html#duk_get_finalizer
 func (d *Context) GetFinalizer(index int) {
 	C.duk_get_finalizer(d.duk_context, C.duk_idx_t(index))
@@ -603,6 +612,11 @@ func (d *Context) IsNumber(index int) bool {
 // See: http://duktape.org/api.html#duk_is_object
 func (d *Context) IsObject(index int) bool {
 	return int(C.duk_is_object(d.duk_context, C.duk_idx_t(index))) == 1
+}
+
+// See: http://duktape.org/api.html#duk_is_error
+func (d *Context) IsError(index int) bool {
+	return int(C._duk_is_error(d.duk_context, C.duk_idx_t(index))) == 1
 }
 
 // See: http://duktape.org/api.html#duk_is_object_coercible
