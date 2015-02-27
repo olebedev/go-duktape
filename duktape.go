@@ -132,6 +132,33 @@ func (t Type) IsBuffer() bool    { return t == TypeBuffer }
 func (t Type) IsPointer() bool   { return t == TypePointer }
 func (t Type) IsLightFunc() bool { return t == TypeLightFunc }
 
+func (t Type) String() string {
+	switch t {
+	case TypeNone:
+		return "None"
+	case TypeUndefined:
+		return "Undefined"
+	case TypeNull:
+		return "Null"
+	case TypeBoolean:
+		return "Boolean"
+	case TypeNumber:
+		return "Number"
+	case TypeString:
+		return "String"
+	case TypeObject:
+		return "Object"
+	case TypeBuffer:
+		return "Buffer"
+	case TypePointer:
+		return "Pointer"
+	case TypeLightFunc:
+		return "LightFunc"
+	default:
+		return "Unknown"
+	}
+}
+
 type Context struct {
 	duk_context unsafe.Pointer
 }
