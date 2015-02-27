@@ -140,9 +140,18 @@ static void *_duk_push_fixed_buffer(duk_context *ctx, duk_size_t size) {
 static void *_duk_push_dynamic_buffer(duk_context *ctx, duk_size_t size) {
 	return duk_push_dynamic_buffer(ctx, size);
 }
+static void _duk_error(duk_context *ctx, duk_errcode_t err_code, const char *str) {
+	duk_error(ctx, err_code, "%s", str);
+}
+static void _duk_push_error_object(duk_context *ctx, duk_errcode_t err_code, const char *str) {
+	duk_push_error_object(ctx, err_code, "%s", str);
+}
 */
 import "C"
-import "unsafe"
+import (
+	"fmt"
+	"unsafe"
+)
 
 // See: http://duktape.org/api.html#duk_alloc
 func (d *Context) Alloc(size int) {
@@ -307,6 +316,30 @@ func (d *Context) Enum(objIndex int, enumFlags uint) {
 // See: http://duktape.org/api.html#duk_equals
 func (d *Context) Equals(index1 int, index2 int) bool {
 	return int(C.duk_equals(d.duk_context, C.duk_idx_t(index1), C.duk_idx_t(index2))) == 1
+}
+
+// Error pushes a new Error object to the stack and throws it. This will call
+// fmt.Sprint, forwarding arguments after the error code, to produce the
+// Error's message.
+//
+// See: http://duktape.org/api.html#duk_error
+func (d *Context) Error(errCode int, a ...interface{}) {
+	str := fmt.Sprint(a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_error(d.duk_context, C.duk_errcode_t(errCode), __str__)
+}
+
+// Errorf pushes a new Error object to the stack and throws it. This will call
+// fmt.Sprintf, forwarding the format string and additional arguments, to
+// produce the Error's message.
+//
+// See: http://duktape.org/api.html#duk_error
+func (d *Context) Errorf(errCode int, format string, a ...interface{}) {
+	str := fmt.Sprintf(format, a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_error(d.duk_context, C.duk_errcode_t(errCode), __str__)
 }
 
 // See: http://duktape.org/api.html#duk_eval
@@ -871,6 +904,30 @@ func (d *Context) PushDynamicBuffer(size int) {
 	C._duk_push_dynamic_buffer(d.duk_context, C.duk_size_t(size))
 }
 
+// PushErrorObject pushes a new Error object to the stack. This will call
+// fmt.Sprint, forwarding arguments after the error code, to produce the
+// Error's message.
+//
+// See: http://duktape.org/api.html#duk_push_error_object
+func (d *Context) PushErrorObject(errCode int, a ...interface{}) {
+	str := fmt.Sprint(a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_push_error_object(d.duk_context, C.duk_errcode_t(errCode), __str__)
+}
+
+// PushErrorObjectf pushes a new Error object to the stack. This will call
+// fmt.Sprintf, forwarding the format string and additional arguments, to
+// produce the Error's message.
+//
+// See: http://duktape.org/api.html#duk_push_error_object
+func (d *Context) PushErrorObjectf(errCode int, format string, a ...interface{}) {
+	str := fmt.Sprintf(format, a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_push_error_object(d.duk_context, C.duk_errcode_t(errCode), __str__)
+}
+
 // See: http://duktape.org/api.html#duk_push_false
 func (d *Context) PushFalse() {
 	C.duk_push_false(d.duk_context)
@@ -1317,12 +1374,10 @@ func (d *Context) XmoveTop(fromCtx *Context, count int) {
  * CreateHeap see: http://duktape.org/api.html#duk_create_heap
  * CreateHeapDefault see: http://duktape.org/api.html#duk_create_heap_default
  * DecodeString see: http://duktape.org/api.html#duk_decode_string
- * Error see: http://duktape.org/api.html#duk_error
  * Free see: http://duktape.org/api.html#duk_free
  * FreeRaw see: http://duktape.org/api.html#duk_free_raw
  * GetMemoryFunctions see: http://duktape.org/api.html#duk_get_memory_functions
  * MapString see: http://duktape.org/api.html#duk_map_string
- * PushErrorObject see: http://duktape.org/api.html#duk_push_error_object
  * PushPointer see: http://duktape.org/api.html#duk_push_pointer
  * PushSprintf see: http://duktape.org/api.html#duk_push_sprintf
  * PushVsprintf see: http://duktape.org/api.html#duk_push_vsprintf
