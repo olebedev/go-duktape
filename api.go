@@ -50,6 +50,9 @@ static void _duk_eval_noresult(duk_context *ctx) {
 static void _duk_eval_string_noresult(duk_context *ctx, const char *src) {
 	return duk_eval_string_noresult(ctx, src);
 }
+static duk_bool_t _duk_is_error(duk_context *ctx, duk_idx_t index) {
+	return duk_is_error(ctx, index);
+}
 static duk_bool_t _duk_is_object_coercible(duk_context *ctx, duk_idx_t index) {
 	return duk_is_object_coercible(ctx, index);
 }
@@ -119,9 +122,36 @@ static void _duk_xcopy_top(duk_context *to_ctx, duk_context *from_ctx, duk_idx_t
 static void _duk_xmove_top(duk_context *to_ctx, duk_context *from_ctx, duk_idx_t count) {
 	return duk_xmove_top(to_ctx, from_ctx, count);
 }
+static void *_duk_to_buffer(duk_context *ctx, duk_idx_t index, duk_size_t *out_size) {
+	return duk_to_buffer(ctx, index, out_size);
+}
+static void *_duk_to_dynamic_buffer(duk_context *ctx, duk_idx_t index, duk_size_t *out_size) {
+	return duk_to_dynamic_buffer(ctx, index, out_size);
+}
+static void *_duk_to_fixed_buffer(duk_context *ctx, duk_idx_t index, duk_size_t *out_size) {
+	return duk_to_fixed_buffer(ctx, index, out_size);
+}
+static void *_duk_push_buffer(duk_context *ctx, duk_size_t size, duk_bool_t dynamic) {
+	return duk_push_buffer(ctx, size, dynamic);
+}
+static void *_duk_push_fixed_buffer(duk_context *ctx, duk_size_t size) {
+	return duk_push_fixed_buffer(ctx, size);
+}
+static void *_duk_push_dynamic_buffer(duk_context *ctx, duk_size_t size) {
+	return duk_push_dynamic_buffer(ctx, size);
+}
+static void _duk_error(duk_context *ctx, duk_errcode_t err_code, const char *str) {
+	duk_error(ctx, err_code, "%s", str);
+}
+static void _duk_push_error_object(duk_context *ctx, duk_errcode_t err_code, const char *str) {
+	duk_push_error_object(ctx, err_code, "%s", str);
+}
 */
 import "C"
-import "unsafe"
+import (
+	"fmt"
+	"unsafe"
+)
 
 // See: http://duktape.org/api.html#duk_alloc
 func (d *Context) Alloc(size int) {
@@ -253,6 +283,11 @@ func (d *Context) DelPropString(objIndex int, key string) bool {
 	return int(C.duk_del_prop_string(d.duk_context, C.duk_idx_t(objIndex), __key__)) == 1
 }
 
+// See: http://duktape.org/api.html#duk_def_prop
+func (d *Context) DefProp(objIndex int, flags uint) {
+	C.duk_def_prop(d.duk_context, C.duk_idx_t(objIndex), C.duk_uint_t(flags))
+}
+
 // See: http://duktape.org/api.html#duk_destroy_heap
 func (d *Context) DestroyHeap() {
 	C.duk_destroy_heap(d.duk_context)
@@ -286,6 +321,30 @@ func (d *Context) Enum(objIndex int, enumFlags uint) {
 // See: http://duktape.org/api.html#duk_equals
 func (d *Context) Equals(index1 int, index2 int) bool {
 	return int(C.duk_equals(d.duk_context, C.duk_idx_t(index1), C.duk_idx_t(index2))) == 1
+}
+
+// Error pushes a new Error object to the stack and throws it. This will call
+// fmt.Sprint, forwarding arguments after the error code, to produce the
+// Error's message.
+//
+// See: http://duktape.org/api.html#duk_error
+func (d *Context) Error(errCode int, a ...interface{}) {
+	str := fmt.Sprint(a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_error(d.duk_context, C.duk_errcode_t(errCode), __str__)
+}
+
+// Errorf pushes a new Error object to the stack and throws it. This will call
+// fmt.Sprintf, forwarding the format string and additional arguments, to
+// produce the Error's message.
+//
+// See: http://duktape.org/api.html#duk_error
+func (d *Context) Errorf(errCode int, format string, a ...interface{}) {
+	str := fmt.Sprintf(format, a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_error(d.duk_context, C.duk_errcode_t(errCode), __str__)
 }
 
 // See: http://duktape.org/api.html#duk_eval
@@ -372,6 +431,12 @@ func (d *Context) GetCurrentMagic() int {
 	return int(C.duk_get_current_magic(d.duk_context))
 }
 
+// See: http://duktape.org/api.html#duk_get_error_code
+func (d *Context) GetErrorCode(index int) int {
+	code := int(C.duk_get_error_code(d.duk_context, C.duk_idx_t(index)))
+	return code
+}
+
 // See: http://duktape.org/api.html#duk_get_finalizer
 func (d *Context) GetFinalizer(index int) {
 	C.duk_get_finalizer(d.duk_context, C.duk_idx_t(index))
@@ -382,6 +447,11 @@ func (d *Context) GetGlobalString(key string) bool {
 	__key__ := C.CString(key)
 	defer C.free(unsafe.Pointer(__key__))
 	return int(C.duk_get_global_string(d.duk_context, __key__)) == 1
+}
+
+// See: http://duktape.org/api.html#duk_get_heapptr
+func (d *Context) GetHeapptr(index int) unsafe.Pointer {
+	return unsafe.Pointer(C.duk_get_heapptr(d.duk_context, C.duk_idx_t(index)))
 }
 
 // See: http://duktape.org/api.html#duk_get_int
@@ -585,6 +655,11 @@ func (d *Context) IsNumber(index int) bool {
 // See: http://duktape.org/api.html#duk_is_object
 func (d *Context) IsObject(index int) bool {
 	return int(C.duk_is_object(d.duk_context, C.duk_idx_t(index))) == 1
+}
+
+// See: http://duktape.org/api.html#duk_is_error
+func (d *Context) IsError(index int) bool {
+	return int(C._duk_is_error(d.duk_context, C.duk_idx_t(index))) == 1
 }
 
 // See: http://duktape.org/api.html#duk_is_object_coercible
@@ -811,7 +886,7 @@ func (d *Context) PushBuffer(size int, dynamic bool) {
 	if dynamic {
 		__dynamic__ = 1
 	}
-	C.duk_push_buffer(d.duk_context, C.duk_size_t(size), C.duk_bool_t(__dynamic__))
+	C._duk_push_buffer(d.duk_context, C.duk_size_t(size), C.duk_bool_t(__dynamic__))
 }
 
 // See: http://duktape.org/api.html#duk_push_c_function
@@ -836,7 +911,31 @@ func (d *Context) PushCurrentThread() {
 
 // See: http://duktape.org/api.html#duk_push_dynamic_buffer
 func (d *Context) PushDynamicBuffer(size int) {
-	C.duk_push_dynamic_buffer(d.duk_context, C.duk_size_t(size))
+	C._duk_push_dynamic_buffer(d.duk_context, C.duk_size_t(size))
+}
+
+// PushErrorObject pushes a new Error object to the stack. This will call
+// fmt.Sprint, forwarding arguments after the error code, to produce the
+// Error's message.
+//
+// See: http://duktape.org/api.html#duk_push_error_object
+func (d *Context) PushErrorObject(errCode int, a ...interface{}) {
+	str := fmt.Sprint(a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_push_error_object(d.duk_context, C.duk_errcode_t(errCode), __str__)
+}
+
+// PushErrorObjectf pushes a new Error object to the stack. This will call
+// fmt.Sprintf, forwarding the format string and additional arguments, to
+// produce the Error's message.
+//
+// See: http://duktape.org/api.html#duk_push_error_object
+func (d *Context) PushErrorObjectf(errCode int, format string, a ...interface{}) {
+	str := fmt.Sprintf(format, a...)
+	__str__ := C.CString(str)
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_push_error_object(d.duk_context, C.duk_errcode_t(errCode), __str__)
 }
 
 // See: http://duktape.org/api.html#duk_push_false
@@ -846,7 +945,7 @@ func (d *Context) PushFalse() {
 
 // See: http://duktape.org/api.html#duk_push_fixed_buffer
 func (d *Context) PushFixedBuffer(size int) {
-	C.duk_push_fixed_buffer(d.duk_context, C.duk_size_t(size))
+	C._duk_push_fixed_buffer(d.duk_context, C.duk_size_t(size))
 }
 
 // See: http://duktape.org/api.html#duk_push_global_object
@@ -857,6 +956,11 @@ func (d *Context) PushGlobalObject() {
 // See: http://duktape.org/api.html#duk_push_global_stash
 func (d *Context) PushGlobalStash() {
 	C.duk_push_global_stash(d.duk_context)
+}
+
+// See: http://duktape.org/api.html#duk_push_heapptr
+func (d *Context) PushHeapptr(ptr unsafe.Pointer) {
+	C.duk_push_heapptr(d.duk_context, ptr)
 }
 
 // See: http://duktape.org/api.html#duk_push_heap_stash
@@ -1002,6 +1106,11 @@ func (d *Context) RequireBuffer(index int, outSize int) {
 // See: http://duktape.org/api.html#duk_require_context
 func (d *Context) RequireContext(index int) *Context {
 	return &Context{C.duk_require_context(d.duk_context, C.duk_idx_t(index))}
+}
+
+// See: http://duktape.org/api.html#duk_require_heapptr
+func (d *Context) RequireHeapptr(index int) unsafe.Pointer {
+	return unsafe.Pointer(C.duk_require_heapptr(d.duk_context, C.duk_idx_t(index)))
 }
 
 // See: http://duktape.org/api.html#duk_require_int
@@ -1174,7 +1283,7 @@ func (d *Context) ToBoolean(index int) bool {
 
 // See: http://duktape.org/api.html#duk_to_buffer
 func (d *Context) ToBuffer(index int, outSize int) {
-	C.duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	C._duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_defaultvalue
@@ -1184,12 +1293,12 @@ func (d *Context) ToDefaultvalue(index int, hint int) {
 
 // See: http://duktape.org/api.html#duk_to_dynamic_buffer
 func (d *Context) ToDynamicBuffer(index int, outSize int) {
-	C.duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	C._duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_fixed_buffer
 func (d *Context) ToFixedBuffer(index int, outSize int) {
-	C.duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	C._duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_int
@@ -1285,12 +1394,10 @@ func (d *Context) XmoveTop(fromCtx *Context, count int) {
  * CreateHeap see: http://duktape.org/api.html#duk_create_heap
  * CreateHeapDefault see: http://duktape.org/api.html#duk_create_heap_default
  * DecodeString see: http://duktape.org/api.html#duk_decode_string
- * Error see: http://duktape.org/api.html#duk_error
  * Free see: http://duktape.org/api.html#duk_free
  * FreeRaw see: http://duktape.org/api.html#duk_free_raw
  * GetMemoryFunctions see: http://duktape.org/api.html#duk_get_memory_functions
  * MapString see: http://duktape.org/api.html#duk_map_string
- * PushErrorObject see: http://duktape.org/api.html#duk_push_error_object
  * PushPointer see: http://duktape.org/api.html#duk_push_pointer
  * PushSprintf see: http://duktape.org/api.html#duk_push_sprintf
  * PushVsprintf see: http://duktape.org/api.html#duk_push_vsprintf

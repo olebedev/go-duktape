@@ -14,30 +14,150 @@ import "regexp"
 import "time"
 import "unsafe"
 
+const (
+	CompileEval uint = 1 << iota
+	CompileFunction
+	CompileStrict
+	CompileSafe
+	CompileNoResult
+	CompileNoSource
+	CompileStrlen
+)
+
 const goFuncCallName = "__goFuncCall__"
 const (
-	DUK_TYPE_NONE Type = iota
-	DUK_TYPE_UNDEFINED
-	DUK_TYPE_NULL
-	DUK_TYPE_BOOLEAN
-	DUK_TYPE_NUMBER
-	DUK_TYPE_STRING
-	DUK_TYPE_OBJECT
-	DUK_TYPE_BUFFER
-	DUK_TYPE_POINTER
+	TypeNone Type = iota
+	TypeUndefined
+	TypeNull
+	TypeBoolean
+	TypeNumber
+	TypeString
+	TypeObject
+	TypeBuffer
+	TypePointer
+	TypeLightFunc
+)
+
+const (
+	TypeMaskNone uint = 1 << iota
+	TypeMaskUndefined
+	TypeMaskNull
+	TypeMaskBoolean
+	TypeMaskNumber
+	TypeMaskString
+	TypeMaskObject
+	TypeMaskBuffer
+	TypeMaskPointer
+	TypeMaskLightFunc
+)
+
+const (
+	EnumIncludeNonenumerable uint = 1 << iota
+	EnumIncludeInternal
+	EnumOwnPropertiesOnly
+	EnumArrayIndicesOnly
+	EnumSortArrayIndices
+	NoProxyBehavior
+)
+
+const (
+	ErrNone int = 0
+
+	// Internal to Duktape
+	ErrUnimplemented int = 50 + iota
+	ErrUnsupported
+	ErrInternal
+	ErrAlloc
+	ErrAssertion
+	ErrAPI
+	ErrUncaughtError
+)
+
+const (
+	// Common prototypes
+	ErrError int = 100 + iota
+	ErrEval
+	ErrRange
+	ErrReference
+	ErrSyntax
+	ErrType
+	ErrURI
+)
+
+const (
+	// Returned error values
+	ErrRetUnimplemented int = -(ErrUnimplemented + iota)
+	ErrRetUnsupported
+	ErrRetInternal
+	ErrRetAlloc
+	ErrRetAssertion
+	ErrRetAPI
+	ErrRetUncaughtError
+)
+
+const (
+	ErrRetError int = -(ErrError + iota)
+	ErrRetEval
+	ErrRetRange
+	ErrRetReference
+	ErrRetSyntax
+	ErrRetType
+	ErrRetURI
+)
+
+const (
+	ExecSuccess = iota
+	ExecError
+)
+
+const (
+	LogTrace int = iota
+	LogDebug
+	LogInfo
+	LogWarn
+	LogError
+	LogFatal
 )
 
 type Type int
 
-func (t Type) IsNone() bool      { return t == DUK_TYPE_NONE }
-func (t Type) IsUndefined() bool { return t == DUK_TYPE_UNDEFINED }
-func (t Type) IsNull() bool      { return t == DUK_TYPE_NULL }
-func (t Type) IsBool() bool      { return t == DUK_TYPE_BOOLEAN }
-func (t Type) IsNumber() bool    { return t == DUK_TYPE_NUMBER }
-func (t Type) IsString() bool    { return t == DUK_TYPE_STRING }
-func (t Type) IsObject() bool    { return t == DUK_TYPE_OBJECT }
-func (t Type) IsBuffer() bool    { return t == DUK_TYPE_BUFFER }
-func (t Type) IsPointer() bool   { return t == DUK_TYPE_POINTER }
+func (t Type) IsNone() bool      { return t == TypeNone }
+func (t Type) IsUndefined() bool { return t == TypeUndefined }
+func (t Type) IsNull() bool      { return t == TypeNull }
+func (t Type) IsBool() bool      { return t == TypeBoolean }
+func (t Type) IsNumber() bool    { return t == TypeNumber }
+func (t Type) IsString() bool    { return t == TypeString }
+func (t Type) IsObject() bool    { return t == TypeObject }
+func (t Type) IsBuffer() bool    { return t == TypeBuffer }
+func (t Type) IsPointer() bool   { return t == TypePointer }
+func (t Type) IsLightFunc() bool { return t == TypeLightFunc }
+
+func (t Type) String() string {
+	switch t {
+	case TypeNone:
+		return "None"
+	case TypeUndefined:
+		return "Undefined"
+	case TypeNull:
+		return "Null"
+	case TypeBoolean:
+		return "Boolean"
+	case TypeNumber:
+		return "Number"
+	case TypeString:
+		return "String"
+	case TypeObject:
+		return "Object"
+	case TypeBuffer:
+		return "Buffer"
+	case TypePointer:
+		return "Pointer"
+	case TypeLightFunc:
+		return "LightFunc"
+	default:
+		return "Unknown"
+	}
+}
 
 type Context struct {
 	duk_context unsafe.Pointer
@@ -131,6 +251,6 @@ func testFunc(ctx unsafe.Pointer) C.duk_ret_t {
 	return C.duk_ret_t(goTestfunc(&Context{ctx}))
 }
 
-func (d *Context) pushTestFunc() {
-	d.PushCFunction((*[0]byte)(C.testFunc), (-1))
-}
+var testFuncPtr = C.testFunc
+
+// vim: set ft=go ts=8 sw=8 tw=79 sts=0 fo=crqn1j noet sta :
