@@ -528,8 +528,8 @@ func (d *Context) GetTopIndex() int {
 }
 
 // See: http://duktape.org/api.html#duk_get_type
-func (d *Context) GetType(index int) int {
-	return int(C.duk_get_type(d.duk_context, C.duk_idx_t(index)))
+func (d *Context) GetType(index int) Type {
+	return Type(C.duk_get_type(d.duk_context, C.duk_idx_t(index)))
 }
 
 // See: http://duktape.org/api.html#duk_get_type_mask
