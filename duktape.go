@@ -5,14 +5,16 @@ package duktape
 
 # include "duktape.h"
 extern duk_ret_t goFuncCall(duk_context *ctx);
-extern duk_ret_t testFunc(duk_context *ctx);
 */
 import "C"
-import "errors"
-import "fmt"
-import "regexp"
-import "time"
-import "unsafe"
+import (
+	"errors"
+	"fmt"
+	"log"
+	"regexp"
+	"sync"
+	"unsafe"
+)
 
 const (
 	CompileEval uint = 1 << iota
@@ -24,7 +26,6 @@ const (
 	CompileStrlen
 )
 
-const goFuncCallName = "__goFuncCall__"
 const (
 	TypeNone Type = iota
 	TypeUndefined
@@ -119,6 +120,9 @@ const (
 	LogFatal
 )
 
+const goFuncCallName = "__goFuncCall__"
+const goCtxName = "__goCtx__"
+
 type Type int
 
 func (t Type) IsNone() bool      { return t == TypeNone }
@@ -161,71 +165,87 @@ func (t Type) String() string {
 
 type Context struct {
 	duk_context unsafe.Pointer
+	fn          map[string]func(*Context) int
+	mu          sync.Mutex
 }
 
-// Returns initialized duktape context object
-func NewContext() *Context {
+func New() *Context {
+	panic("Unimplemented")
+}
+
+// Returns plain initialized duktape context object
+// See: http://duktape.org/api.html#duk_create_heap_default
+func Default() *Context {
 	ctx := &Context{
 		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
+		fn:          make(map[string]func(*Context) int),
 	}
 	ctx.defineGoFuncCall()
+	ctx.pushGoCtx()
 	return ctx
+}
+
+// DEPRICATED
+func NewContext() *Context {
+	log.Println(`
+		duktape.NewContext() is depricated, please use 
+		duktape.New() or duktape.Default() instead
+	`)
+	return Default()
 }
 
 //export goFuncCall
 func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
-	c := &Context{ctx}
-	if c.GetTop() == 0 {
-		// unexpected call, without function name's hash
+	d := &Context{duk_context: ctx}
+	d.pullGoCtx()
+
+	// d.PushContextDump()
+	// log.Printf("goCall context: %s", d.GetString(-1))
+	// d.Pop()
+
+	if d.GetTop() == 0 {
 		panic("Go function call without arguments is not supported")
-		return C.DUK_RET_UNSUPPORTED_ERROR
 	}
-	if !Type(c.GetType(0)).IsString() {
-		// unexpected type of function name's hash
+	if !Type(d.GetType(0)).IsString() {
 		panic("Wrong type of function's key argument")
-		return C.DUK_RET_EVAL_ERROR
 	}
-	key := c.GetString(0)
-	if fn, ok := goFuncMap[key]; ok {
-		r := fn(c)
+	name := d.GetString(0)
+	if fn, ok := d.fn[name]; ok {
+		r := fn(d)
 		return C.duk_ret_t(r)
 	}
 	panic("Unimplemented")
-	return C.DUK_RET_UNIMPLEMENTED_ERROR
 }
 
-func getKeyFor(funcName string) string {
-	c := 0
-	key := fmt.Sprintf("__%s_%d%d__", funcName, time.Now().Nanosecond(), c)
-	for {
-		if _, ok := goFuncMap[key]; ok {
-			c++
-			key = fmt.Sprintf("__%s_%d%d__", funcName, time.Now().Nanosecond(), c)
-			continue
-		}
-		break
-	}
-	return key
-}
-
-var goFuncMap = map[string]func(*Context) int{}
 var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
 
+// Defines given function into duktape javascript context
 func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
 	if !reFuncName.MatchString(name) {
 		return errors.New("Malformed function name '" + name + "'")
 	}
-	key := getKeyFor(name)
-	goFuncMap[key] = fn
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.fn[name] = fn
 
 	// TODO: apply dot notation names
 	d.EvalString(fmt.Sprintf(`
       function %s (){
         return %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
       };
-  `, name, goFuncCallName, key))
+  `, name, goFuncCallName, name))
 	d.Pop()
 	return nil
+}
+
+// Cleans given function from duktape javascript context
+func (d *Context) PopGoFunc(name string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if _, ok := d.fn[name]; ok {
+		d.EvalString(fmt.Sprintf(`%s = undefined;`, name))
+		delete(d.fn, name)
+	}
 }
 
 func (d *Context) defineGoFuncCall() {
@@ -235,22 +255,18 @@ func (d *Context) defineGoFuncCall() {
 	d.Pop()
 }
 
-/**
- * only for tests
- */
-func goTestfunc(ctx *Context) int {
-	top := ctx.GetTop()
-	a := ctx.GetNumber(top - 2)
-	b := ctx.GetNumber(top - 1)
-	ctx.PushNumber(a + b)
-	return 1
+func (d *Context) pushGoCtx() {
+	d.PushGlobalObject()
+	d.PushPointer(unsafe.Pointer(d))
+	d.PutPropString(-2, goCtxName)
+	d.Pop()
 }
 
-//export testFunc
-func testFunc(ctx unsafe.Pointer) C.duk_ret_t {
-	return C.duk_ret_t(goTestfunc(&Context{ctx}))
+func (d *Context) pullGoCtx() {
+	d.PushGlobalObject()
+	d.GetPropString(-1, goCtxName)
+	ctx := (*Context)(d.GetPointer(-1))
+	d.fn = ctx.fn
+	d.mu = ctx.mu
+	d.Pop2()
 }
-
-var testFuncPtr = C.testFunc
-
-// vim: set ft=go ts=8 sw=8 tw=79 sts=0 fo=crqn1j noet sta :

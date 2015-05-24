@@ -423,7 +423,7 @@ func (d *Context) GetBuffer(index int, outSize int) {
 
 // See: http://duktape.org/api.html#duk_get_context
 func (d *Context) GetContext(index int) *Context {
-	return &Context{C.duk_get_context(d.duk_context, C.duk_idx_t(index))}
+	return &Context{duk_context: C.duk_get_context(d.duk_context, C.duk_idx_t(index))}
 }
 
 // See: http://duktape.org/api.html#duk_get_current_magic
@@ -483,8 +483,8 @@ func (d *Context) GetNumber(index int) float64 {
 }
 
 // See: http://duktape.org/api.html#duk_get_pointer
-func (d *Context) GetPointer(index int) {
-	C.duk_get_pointer(d.duk_context, C.duk_idx_t(index))
+func (d *Context) GetPointer(index int) unsafe.Pointer {
+	return C.duk_get_pointer(d.duk_context, C.duk_idx_t(index))
 }
 
 // See: http://duktape.org/api.html#duk_get_prop
@@ -1105,7 +1105,7 @@ func (d *Context) RequireBuffer(index int, outSize int) {
 
 // See: http://duktape.org/api.html#duk_require_context
 func (d *Context) RequireContext(index int) *Context {
-	return &Context{C.duk_require_context(d.duk_context, C.duk_idx_t(index))}
+	return &Context{duk_context: C.duk_require_context(d.duk_context, C.duk_idx_t(index))}
 }
 
 // See: http://duktape.org/api.html#duk_require_heapptr
@@ -1387,18 +1387,21 @@ func (d *Context) XmoveTop(fromCtx *Context, count int) {
 	C._duk_xmove_top(d.duk_context, fromCtx.duk_context, C.duk_idx_t(count))
 }
 
+// See: http://duktape.org/api.html#duk_push_pointer
+func (d *Context) PushPointer(p unsafe.Pointer) {
+	C.duk_push_pointer(d.duk_context, p)
+}
+
 /**
  * Unimplemented.
  *
  * CharCodeAt see: http://duktape.org/api.html#duk_char_code_at
  * CreateHeap see: http://duktape.org/api.html#duk_create_heap
- * CreateHeapDefault see: http://duktape.org/api.html#duk_create_heap_default
  * DecodeString see: http://duktape.org/api.html#duk_decode_string
  * Free see: http://duktape.org/api.html#duk_free
  * FreeRaw see: http://duktape.org/api.html#duk_free_raw
  * GetMemoryFunctions see: http://duktape.org/api.html#duk_get_memory_functions
  * MapString see: http://duktape.org/api.html#duk_map_string
- * PushPointer see: http://duktape.org/api.html#duk_push_pointer
  * PushSprintf see: http://duktape.org/api.html#duk_push_sprintf
  * PushVsprintf see: http://duktape.org/api.html#duk_push_vsprintf
  * PutFunctionList see: http://duktape.org/api.html#duk_put_function_list
