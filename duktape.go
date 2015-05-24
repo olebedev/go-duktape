@@ -13,6 +13,7 @@ import (
 	"log"
 	"regexp"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -122,6 +123,11 @@ const (
 
 const goFuncCallName = "__goFuncCall__"
 const goCtxName = "__goCtx__"
+const goFunctionHandler = `
+    function(){
+	    return %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
+    };
+`
 
 type Type int
 
@@ -173,7 +179,7 @@ func New() *Context {
 	panic("Unimplemented")
 }
 
-// Returns plain initialized duktape context object
+// Default returns plain initialized duktape context object
 // See: http://duktape.org/api.html#duk_create_heap_default
 func Default() *Context {
 	ctx := &Context{
@@ -219,26 +225,42 @@ func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 
 var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
 
-// Defines given function into duktape javascript context
-func (d *Context) PushGoFunc(name string, fn func(*Context) int) error {
+// PushGlobalGoFunction push the given function into duktape global object
+func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) error {
 	if !reFuncName.MatchString(name) {
 		return errors.New("Malformed function name '" + name + "'")
 	}
+
+	d.PushGlobalObject()
+	if err := d.pushGoFunction(name, fn); err != nil {
+		return err
+	}
+
+	d.PutPropString(-2, name)
+	d.Pop()
+
+	return nil
+}
+
+// PushGoFunction push the given function into duktape stack
+func (d *Context) PushGoFunction(fn func(*Context) int) (string, error) {
+	name := fmt.Sprintf("anon_%d", time.Now().Nanosecond())
+	return name, d.pushGoFunction(name, fn)
+}
+
+func (d *Context) pushGoFunction(name string, fn func(*Context) int) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.fn[name] = fn
 
-	// TODO: apply dot notation names
-	d.EvalString(fmt.Sprintf(`
-      function %s (){
-        return %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
-      };
-  `, name, goFuncCallName, name))
-	d.Pop()
+	d.CompileString(CompileFunction, fmt.Sprintf(
+		goFunctionHandler, goFuncCallName, name,
+	))
+
 	return nil
 }
 
-// Cleans given function from duktape javascript context
+// PopGoFunc cleans given function from duktape javascript context
 func (d *Context) PopGoFunc(name string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
