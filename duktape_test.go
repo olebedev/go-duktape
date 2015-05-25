@@ -43,10 +43,10 @@ func TestGoFuncCallWWrongFuncName(t *testing.T) {
 	ctx.DestroyHeap()
 }
 
-func TestGofuncCall(t *testing.T) {
+func TestPushGlobalGoFunction_Call(t *testing.T) {
 	var check bool
 	ctx := Default()
-	ctx.PushGoFunc("test", func(c *Context) int {
+	ctx.PushGlobalGoFunction("test", func(c *Context) int {
 		check = !check
 		return 0
 	})
@@ -61,10 +61,29 @@ func TestGofuncCall(t *testing.T) {
 	ctx.DestroyHeap()
 }
 
+func TestPushGoFunction_Call(t *testing.T) {
+	var check bool
+	ctx := Default()
+	name, err := ctx.PushGoFunction(func(c *Context) int {
+		check = !check
+		return 0
+	})
+
+	expect(t, err, nil)
+	expect(t, len(ctx.fn), 1)
+
+	ctx.EvalString(goFuncCallName + `('` + name + `');`)
+	expect(t, check, true)
+	ctx.EvalString(goFuncCallName + `('` + name + `');`)
+	expect(t, check, false)
+
+	ctx.DestroyHeap()
+}
+
 func TestPopGoFunc(t *testing.T) {
 	var check bool
 	ctx := Default()
-	ctx.PushGoFunc("test", func(c *Context) int {
+	ctx.PushGlobalGoFunction("test", func(c *Context) int {
 		check = !check
 		return 0
 	})
@@ -100,7 +119,7 @@ func goTestfunc(ctx *Context) int {
 
 func TestMyAddTwo(t *testing.T) {
 	ctx := Default()
-	ctx.PushGoFunc("adder", goTestfunc)
+	ctx.PushGlobalGoFunction("adder", goTestfunc)
 	ctx.EvalString(`print("2 + 3 =", adder(2,3))`)
 	ctx.Pop()
 	ctx.EvalString(`adder(2,3)`)

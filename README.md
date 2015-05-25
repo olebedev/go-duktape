@@ -31,7 +31,7 @@ import "github.com/olebedev/go-duktape"
 
 func main() {
   ctx := duktape.NewContext()
-  ctx.PushGoFunc("log", func(ctx *duktape.Context) int {
+  ctx.PushGlobalGoFunction("log", func(ctx *duktape.Context) int {
     fmt.Println("Go lang Go!")
     return 0
   })
@@ -51,5 +51,5 @@ The package is not fully tested, so be careful.
 
 ### Contribution
 
-Pull requests are welcome!  
+Pull requests are welcome!
 __Convention:__ fork the repository and make changes on your fork in a feature branch.
