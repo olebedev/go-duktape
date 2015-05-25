@@ -58,6 +58,21 @@ func TestPushGlobalGoFunction_Call(t *testing.T) {
 		expect(t, check, false)
 		break
 	}
+
+	ctx.DestroyHeap()
+}
+
+func TestPushGlobalGoFunction_Finalize(t *testing.T) {
+	ctx := Default()
+	ctx.PushGlobalGoFunction("test", func(c *Context) int {
+		return 0
+	})
+
+	expect(t, len(ctx.fn), 1)
+	ctx.EvalString("test = undefined")
+	ctx.Gc(0)
+	expect(t, len(ctx.fn), 0)
+
 	ctx.DestroyHeap()
 }
 
