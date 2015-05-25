@@ -5,6 +5,8 @@ package duktape
 
 # include "duktape.h"
 extern duk_ret_t goFuncCall(duk_context *ctx);
+extern void goFinalizeCall(duk_context *ctx);
+
 */
 import "C"
 import (
@@ -122,10 +124,17 @@ const (
 )
 
 const goFuncCallName = "__goFuncCall__"
+const goFinalizeCallName = "__goFinalizeCall__"
 const goCtxName = "__goCtx__"
 const goFunctionHandler = `
     function(){
 	    return %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
+    };
+`
+
+const goFinalizeHandler = `
+    function(){
+	    %s('%s');
     };
 `
 
@@ -187,6 +196,7 @@ func Default() *Context {
 		fn:          make(map[string]func(*Context) int),
 	}
 	ctx.defineGoFuncCall()
+	ctx.defineGoFinalizeCall()
 	ctx.pushGoCtx()
 	return ctx
 }
@@ -212,7 +222,7 @@ func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 	if d.GetTop() == 0 {
 		panic("Go function call without arguments is not supported")
 	}
-	if !Type(d.GetType(0)).IsString() {
+	if !d.GetType(0).IsString() {
 		panic("Wrong type of function's key argument")
 	}
 	name := d.GetString(0)
@@ -221,6 +231,27 @@ func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
 		return C.duk_ret_t(r)
 	}
 	panic("Unimplemented")
+}
+
+//export goFinalizeCall
+func goFinalizeCall(ctx unsafe.Pointer) {
+	d := &Context{duk_context: ctx}
+	d.pullGoCtx()
+
+	if d.GetTop() == 0 {
+		panic("Go function call without arguments is not supported")
+	}
+	if !d.GetType(0).IsString() {
+		panic("Wrong type of function's key argument")
+	}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	name := d.GetString(0)
+	if _, ok := d.fn[name]; ok {
+		delete(d.fn, name)
+	}
 }
 
 var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
@@ -257,6 +288,11 @@ func (d *Context) pushGoFunction(name string, fn func(*Context) int) error {
 		goFunctionHandler, goFuncCallName, name,
 	))
 
+	d.CompileString(CompileFunction, fmt.Sprintf(
+		goFinalizeHandler, goFinalizeCallName, name,
+	))
+
+	d.SetFinalizer(-2)
 	return nil
 }
 
@@ -264,6 +300,7 @@ func (d *Context) pushGoFunction(name string, fn func(*Context) int) error {
 func (d *Context) PopGoFunc(name string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
 	if _, ok := d.fn[name]; ok {
 		d.EvalString(fmt.Sprintf(`%s = undefined;`, name))
 		delete(d.fn, name)
@@ -274,6 +311,13 @@ func (d *Context) defineGoFuncCall() {
 	d.PushGlobalObject()
 	d.PushCFunction((*[0]byte)(C.goFuncCall), int(C.DUK_VARARGS))
 	d.PutPropString(-2, goFuncCallName)
+	d.Pop()
+}
+
+func (d *Context) defineGoFinalizeCall() {
+	d.PushGlobalObject()
+	d.PushCFunction((*[0]byte)(C.goFinalizeCall), int(C.DUK_VARARGS))
+	d.PutPropString(-2, goFinalizeCallName)
 	d.Pop()
 }
 
