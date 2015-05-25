@@ -51,5 +51,5 @@ The package is not fully tested, so be careful.
 
 ### Contribution
 
-Pull requests are welcome!
+Pull requests are welcome!  
 __Convention:__ fork the repository and make changes on your fork in a feature branch.
