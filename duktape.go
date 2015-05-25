@@ -336,3 +336,15 @@ func (d *Context) pullGoCtx() {
 	d.mu = ctx.mu
 	d.Pop2()
 }
+
+type Error struct {
+	Type       string
+	Message    string
+	FileName   string
+	LineNumber int
+	Stack      string
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Type, e.Message)
+}
