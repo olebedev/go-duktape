@@ -1,8 +1,6 @@
 package duktape
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestPevalString(t *testing.T) {
 	ctx := Default()
@@ -22,6 +20,6 @@ func TestPcompileString(t *testing.T) {
 	ctx := Default()
 	err := ctx.PcompileString(CompileFunction, "foo")
 	expect(t, err.(*Error).Type, "SyntaxError")
-	expect(t, err.(*Error).LineNumber, 0)
+	expect(t, err.(*Error).LineNumber, 1)
 	ctx.DestroyHeap()
 }
