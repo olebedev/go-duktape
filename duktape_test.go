@@ -95,23 +95,6 @@ func TestPushGoFunction_Call(t *testing.T) {
 	ctx.DestroyHeap()
 }
 
-func TestPopGoFunc(t *testing.T) {
-	var check bool
-	ctx := Default()
-	ctx.PushGlobalGoFunction("test", func(c *Context) int {
-		check = !check
-		return 0
-	})
-	expect(t, len(ctx.fn), 1)
-	ctx.EvalString(`test();`)
-	expect(t, check, true)
-	ctx.PopGoFunc("test")
-	expect(t, len(ctx.fn), 0)
-	ctx.EvalString(`typeof test;`)
-	expect(t, ctx.GetString(-1), "undefined")
-	ctx.DestroyHeap()
-}
-
 func TestErrorObj(t *testing.T) {
 	ctx := Default()
 	defer ctx.DestroyHeap()

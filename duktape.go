@@ -296,17 +296,6 @@ func (d *Context) pushGoFunction(name string, fn func(*Context) int) error {
 	return nil
 }
 
-// PopGoFunc cleans given function from duktape javascript context
-func (d *Context) PopGoFunc(name string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if _, ok := d.fn[name]; ok {
-		d.EvalString(fmt.Sprintf(`%s = undefined;`, name))
-		delete(d.fn, name)
-	}
-}
-
 func (d *Context) defineGoFuncCall() {
 	d.PushGlobalObject()
 	d.PushCFunction((*[0]byte)(C.goFuncCall), int(C.DUK_VARARGS))
