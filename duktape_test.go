@@ -21,7 +21,7 @@ func TestPushGlobalGoFunction_Call(t *testing.T) {
 		return 0
 	})
 
-	expect(t, len(fnIndex.functions), 1)
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
 	ctx.EvalString("test();")
 	expect(t, check, true)
 	ctx.EvalString("test();")
@@ -36,10 +36,10 @@ func TestPushGlobalGoFunction_Finalize(t *testing.T) {
 		return 0
 	})
 
-	expect(t, len(fnIndex.functions), 1)
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
 	ctx.EvalString("test = undefined")
 	ctx.Gc(0)
-	expect(t, len(fnIndex.functions), 0)
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 0)
 
 	ctx.DestroyHeap()
 }
@@ -57,7 +57,7 @@ func TestPushGoFunction_Call(t *testing.T) {
 	ctx.Pop()
 
 	expect(t, err, nil)
-	expect(t, len(fnIndex.functions), 1)
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
 
 	ctx.EvalString("test();")
 	expect(t, check, true)

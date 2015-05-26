@@ -19,7 +19,7 @@ import (
 
 var (
 	reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
-	fnIndex    = newFunctionIndex()
+	fnIndexes  = make(map[unsafe.Pointer]*functionIndex, 0)
 )
 
 const goFunctionPtrProp = "_go_function_ptr"
@@ -31,9 +31,10 @@ type Context struct {
 // New returns plain initialized duktape context object
 // See: http://duktape.org/api.html#duk_create_heap_default
 func New() *Context {
-	return &Context{
-		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
-	}
+	duk_context := C.duk_create_heap(nil, nil, nil, nil, nil)
+	fnIndexes[duk_context] = newFunctionIndex()
+
+	return &Context{duk_context}
 }
 
 // PushGlobalGoFunction push the given function into duktape global object
@@ -55,7 +56,7 @@ func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) error
 
 // PushGoFunction push the given function into duktape stack
 func (d *Context) PushGoFunction(fn func(*Context) int) error {
-	ptr := fnIndex.Add(fn)
+	ptr := fnIndexes[d.duk_context].Add(fn)
 
 	d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
 	d.PushCFunction((*[0]byte)(C.goFinalizeCall), 1)
@@ -74,7 +75,8 @@ func goFunctionCall(ctx unsafe.Pointer) C.duk_ret_t {
 	d := &Context{duk_context: ctx}
 	ptr := d.getGoFunctionPtr()
 
-	return C.duk_ret_t(fnIndex.Get(ptr)(d))
+	result := fnIndexes[d.duk_context].Get(ptr)(d)
+	return C.duk_ret_t(result)
 }
 
 //export goFinalizeCall
@@ -82,7 +84,7 @@ func goFinalizeCall(ctx unsafe.Pointer) {
 	d := &Context{duk_context: ctx}
 	ptr := d.getGoFunctionPtr()
 
-	fnIndex.Delete(ptr)
+	fnIndexes[d.duk_context].Delete(ptr)
 }
 
 func (d *Context) getGoFunctionPtr() unsafe.Pointer {
@@ -97,6 +99,10 @@ func (d *Context) getGoFunctionPtr() unsafe.Pointer {
 	}
 
 	return d.GetPointer(-1)
+}
+
+func (d *Context) Destroy() {
+
 }
 
 type Error struct {
