@@ -4,7 +4,7 @@ package duktape
 #cgo linux LDFLAGS: -lm
 
 # include "duktape.h"
-extern duk_ret_t goFuncCall(duk_context *ctx);
+extern duk_ret_t goFunctionCall(duk_context *ctx);
 extern void goFinalizeCall(duk_context *ctx);
 
 */
@@ -12,131 +12,110 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"sync"
-	"time"
 	"unsafe"
 )
 
-const (
-	CompileEval uint = 1 << iota
-	CompileFunction
-	CompileStrict
-	CompileSafe
-	CompileNoResult
-	CompileNoSource
-	CompileStrlen
+var (
+	reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
+	fnIndexes  = make(map[unsafe.Pointer]*functionIndex, 0)
 )
 
-const (
-	TypeNone Type = iota
-	TypeUndefined
-	TypeNull
-	TypeBoolean
-	TypeNumber
-	TypeString
-	TypeObject
-	TypeBuffer
-	TypePointer
-	TypeLightFunc
-)
+const goFunctionPtrProp = "_go_function_ptr"
 
-const (
-	TypeMaskNone uint = 1 << iota
-	TypeMaskUndefined
-	TypeMaskNull
-	TypeMaskBoolean
-	TypeMaskNumber
-	TypeMaskString
-	TypeMaskObject
-	TypeMaskBuffer
-	TypeMaskPointer
-	TypeMaskLightFunc
-)
+type Context struct {
+	duk_context unsafe.Pointer
+}
 
-const (
-	EnumIncludeNonenumerable uint = 1 << iota
-	EnumIncludeInternal
-	EnumOwnPropertiesOnly
-	EnumArrayIndicesOnly
-	EnumSortArrayIndices
-	NoProxyBehavior
-)
+// New returns plain initialized duktape context object
+// See: http://duktape.org/api.html#duk_create_heap_default
+func New() *Context {
+	duk_context := C.duk_create_heap(nil, nil, nil, nil, nil)
+	fnIndexes[duk_context] = newFunctionIndex()
 
-const (
-	ErrNone int = 0
+	return &Context{duk_context}
+}
 
-	// Internal to Duktape
-	ErrUnimplemented int = 50 + iota
-	ErrUnsupported
-	ErrInternal
-	ErrAlloc
-	ErrAssertion
-	ErrAPI
-	ErrUncaughtError
-)
+// PushGlobalGoFunction push the given function into duktape global object
+func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) error {
+	if !reFuncName.MatchString(name) {
+		return errors.New("Malformed function name '" + name + "'")
+	}
 
-const (
-	// Common prototypes
-	ErrError int = 100 + iota
-	ErrEval
-	ErrRange
-	ErrReference
-	ErrSyntax
-	ErrType
-	ErrURI
-)
+	d.PushGlobalObject()
+	if err := d.PushGoFunction(fn); err != nil {
+		return err
+	}
 
-const (
-	// Returned error values
-	ErrRetUnimplemented int = -(ErrUnimplemented + iota)
-	ErrRetUnsupported
-	ErrRetInternal
-	ErrRetAlloc
-	ErrRetAssertion
-	ErrRetAPI
-	ErrRetUncaughtError
-)
+	d.PutPropString(-2, name)
+	d.Pop()
 
-const (
-	ErrRetError int = -(ErrError + iota)
-	ErrRetEval
-	ErrRetRange
-	ErrRetReference
-	ErrRetSyntax
-	ErrRetType
-	ErrRetURI
-)
+	return nil
+}
 
-const (
-	ExecSuccess = iota
-	ExecError
-)
+// PushGoFunction push the given function into duktape stack
+func (d *Context) PushGoFunction(fn func(*Context) int) error {
+	ptr := fnIndexes[d.duk_context].Add(fn)
 
-const (
-	LogTrace int = iota
-	LogDebug
-	LogInfo
-	LogWarn
-	LogError
-	LogFatal
-)
+	d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
+	d.PushCFunction((*[0]byte)(C.goFinalizeCall), 1)
+	d.PushPointer(ptr)
+	d.PutPropString(-2, goFunctionPtrProp)
+	d.SetFinalizer(-2)
 
-const goFuncCallName = "__goFuncCall__"
-const goFinalizeCallName = "__goFinalizeCall__"
-const goCtxName = "__goCtx__"
-const goFunctionHandler = `
-    function(){
-	    return %s.apply(this, ['%s'].concat(Array.prototype.slice.apply(arguments)));
-    };
-`
+	d.PushPointer(ptr)
+	d.PutPropString(-2, goFunctionPtrProp)
 
-const goFinalizeHandler = `
-    function(){
-	    %s('%s');
-    };
-`
+	return nil
+}
+
+//export goFunctionCall
+func goFunctionCall(ctx unsafe.Pointer) C.duk_ret_t {
+	d := &Context{duk_context: ctx}
+	ptr := d.getGoFunctionPtr()
+
+	result := fnIndexes[d.duk_context].Get(ptr)(d)
+	return C.duk_ret_t(result)
+}
+
+//export goFinalizeCall
+func goFinalizeCall(ctx unsafe.Pointer) {
+	d := &Context{duk_context: ctx}
+	ptr := d.getGoFunctionPtr()
+
+	fnIndexes[d.duk_context].Delete(ptr)
+}
+
+func (d *Context) getGoFunctionPtr() unsafe.Pointer {
+	d.PushCurrentFunction()
+	d.GetPropString(-1, goFunctionPtrProp)
+	defer func() {
+		d.Pop2()
+	}()
+
+	if !d.IsPointer(-1) {
+		return nil
+	}
+
+	return d.GetPointer(-1)
+}
+
+func (d *Context) Destroy() {
+
+}
+
+type Error struct {
+	Type       string
+	Message    string
+	FileName   string
+	LineNumber int
+	Stack      string
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Type, e.Message)
+}
 
 type Type int
 
@@ -178,162 +157,38 @@ func (t Type) String() string {
 	}
 }
 
-type Context struct {
-	duk_context unsafe.Pointer
-	fn          map[string]func(*Context) int
-	mu          sync.Mutex
+type functionIndex struct {
+	functions map[unsafe.Pointer]func(*Context) int
+	sync.Mutex
 }
 
-func New() *Context {
-	panic("Unimplemented")
-}
-
-// Default returns plain initialized duktape context object
-// See: http://duktape.org/api.html#duk_create_heap_default
-func Default() *Context {
-	ctx := &Context{
-		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
-		fn:          make(map[string]func(*Context) int),
-	}
-	ctx.defineGoFuncCall()
-	ctx.defineGoFinalizeCall()
-	ctx.pushGoCtx()
-	return ctx
-}
-
-// DEPRICATED
-func NewContext() *Context {
-	log.Println(`
-		duktape.NewContext() is depricated, please use 
-		duktape.New() or duktape.Default() instead
-	`)
-	return Default()
-}
-
-//export goFuncCall
-func goFuncCall(ctx unsafe.Pointer) C.duk_ret_t {
-	d := &Context{duk_context: ctx}
-	d.pullGoCtx()
-
-	// d.PushContextDump()
-	// log.Printf("goCall context: %s", d.GetString(-1))
-	// d.Pop()
-
-	if d.GetTop() == 0 {
-		panic("Go function call without arguments is not supported")
-	}
-	if !d.GetType(0).IsString() {
-		panic("Wrong type of function's key argument")
-	}
-	name := d.GetString(0)
-	if fn, ok := d.fn[name]; ok {
-		r := fn(d)
-		return C.duk_ret_t(r)
-	}
-	panic("Unimplemented")
-}
-
-//export goFinalizeCall
-func goFinalizeCall(ctx unsafe.Pointer) {
-	d := &Context{duk_context: ctx}
-	d.pullGoCtx()
-
-	if d.GetTop() == 0 {
-		panic("Go function call without arguments is not supported")
-	}
-	if !d.GetType(0).IsString() {
-		panic("Wrong type of function's key argument")
-	}
-
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	name := d.GetString(0)
-	if _, ok := d.fn[name]; ok {
-		delete(d.fn, name)
+func newFunctionIndex() *functionIndex {
+	return &functionIndex{
+		functions: make(map[unsafe.Pointer]func(*Context) int, 0),
 	}
 }
 
-var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
+func (i *functionIndex) Add(fn func(*Context) int) unsafe.Pointer {
+	ptr := C.malloc(1)
 
-// PushGlobalGoFunction push the given function into duktape global object
-func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) error {
-	if !reFuncName.MatchString(name) {
-		return errors.New("Malformed function name '" + name + "'")
-	}
+	i.Lock()
+	defer i.Unlock()
+	i.functions[ptr] = fn
 
-	d.PushGlobalObject()
-	if err := d.pushGoFunction(name, fn); err != nil {
-		return err
-	}
-
-	d.PutPropString(-2, name)
-	d.Pop()
-
-	return nil
+	return ptr
 }
 
-// PushGoFunction push the given function into duktape stack
-func (d *Context) PushGoFunction(fn func(*Context) int) (string, error) {
-	name := fmt.Sprintf("anon_%d", time.Now().Nanosecond())
-	return name, d.pushGoFunction(name, fn)
+func (i *functionIndex) Get(ptr unsafe.Pointer) func(*Context) int {
+	i.Lock()
+	defer i.Unlock()
+
+	return i.functions[ptr]
 }
 
-func (d *Context) pushGoFunction(name string, fn func(*Context) int) error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.fn[name] = fn
+func (i *functionIndex) Delete(ptr unsafe.Pointer) {
+	i.Lock()
+	defer i.Unlock()
 
-	d.CompileString(CompileFunction, fmt.Sprintf(
-		goFunctionHandler, goFuncCallName, name,
-	))
-
-	d.CompileString(CompileFunction, fmt.Sprintf(
-		goFinalizeHandler, goFinalizeCallName, name,
-	))
-
-	d.SetFinalizer(-2)
-	return nil
-}
-
-func (d *Context) defineGoFuncCall() {
-	d.PushGlobalObject()
-	d.PushCFunction((*[0]byte)(C.goFuncCall), int(C.DUK_VARARGS))
-	d.PutPropString(-2, goFuncCallName)
-	d.Pop()
-}
-
-func (d *Context) defineGoFinalizeCall() {
-	d.PushGlobalObject()
-	d.PushCFunction((*[0]byte)(C.goFinalizeCall), int(C.DUK_VARARGS))
-	d.PutPropString(-2, goFinalizeCallName)
-	d.Pop()
-}
-
-func (d *Context) pushGoCtx() {
-	d.PushGlobalObject()
-	d.PushPointer(unsafe.Pointer(d))
-	d.PutPropString(-2, goCtxName)
-	d.Pop()
-}
-
-func (d *Context) pullGoCtx() {
-	d.PushGlobalObject()
-	d.GetPropString(-1, goCtxName)
-	ctx := (*Context)(d.GetPointer(-1))
-	d.fn = ctx.fn
-	d.mu = ctx.mu
-	d.Pop2()
-}
-
-type Error struct {
-	Type       string
-	Message    string
-	FileName   string
-	LineNumber int
-	Stack      string
-}
-
-func (e *Error) Error() string {
-	return fmt.Sprintf("%s: %s", e.Type, e.Message)
+	delete(i.functions, ptr)
+	C.free(ptr)
 }

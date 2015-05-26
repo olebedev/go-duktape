@@ -146,6 +146,9 @@ static void _duk_error(duk_context *ctx, duk_errcode_t err_code, const char *str
 static void _duk_push_error_object(duk_context *ctx, duk_errcode_t err_code, const char *str) {
 	duk_push_error_object(ctx, err_code, "%s", str);
 }
+static void _duk_error_raw(duk_context *ctx, duk_errcode_t err_code, const char *filename, duk_int_t line, const char *text) {
+	duk_error_raw(ctx, err_code, filename, line, text);
+}
 */
 import "C"
 import (
@@ -333,6 +336,15 @@ func (d *Context) Error(errCode int, a ...interface{}) {
 	__str__ := C.CString(str)
 	defer C.free(unsafe.Pointer(__str__))
 	C._duk_error(d.duk_context, C.duk_errcode_t(errCode), __str__)
+}
+
+func (d *Context) ErrorRaw(errCode int, filename string, line int, errMsg string) {
+	__filename__ := C.CString(filename)
+	__errMsg__ := C.CString(errMsg)
+	defer C.free(unsafe.Pointer(__filename__))
+	defer C.free(unsafe.Pointer(__errMsg__))
+
+	C._duk_error_raw(d.duk_context, C.duk_errcode_t(errCode), __filename__, C.duk_int_t(line), __errMsg__)
 }
 
 // Errorf pushes a new Error object to the stack and throws it. This will call
@@ -898,21 +910,27 @@ func (d *Context) castStringToError(result int) error {
 
 // See: http://duktape.org/api.html#duk_pop
 func (d *Context) Pop() {
+	if d.GetTop() == 0 {
+		return
+	}
 	C.duk_pop(d.duk_context)
 }
 
 // See: http://duktape.org/api.html#duk_pop_2
 func (d *Context) Pop2() {
-	C.duk_pop_2(d.duk_context)
+	d.PopN(2)
 }
 
 // See: http://duktape.org/api.html#duk_pop_3
 func (d *Context) Pop3() {
-	C.duk_pop_3(d.duk_context)
+	d.PopN(3)
 }
 
 // See: http://duktape.org/api.html#duk_pop_n
 func (d *Context) PopN(count int) {
+	if d.GetTop() < count {
+		return
+	}
 	C.duk_pop_n(d.duk_context, C.duk_idx_t(count))
 }
 

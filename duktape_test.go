@@ -6,102 +6,74 @@ import (
 )
 
 func TestEvalString(t *testing.T) {
-	ctx := Default()
+	ctx := New()
 	ctx.EvalString(`"Golang love Duktape!"`)
 	expect(t, Type(ctx.GetType(-1)).IsString(), true)
 	expect(t, ctx.GetString(-1), "Golang love Duktape!")
 	ctx.DestroyHeap()
 }
 
-func TestGoFuncCallWOArgs(t *testing.T) {
-	defer func() {
-		r := recover()
-		expect(t, r, "Go function call without arguments is not supported")
-	}()
-	ctx := Default()
-	ctx.EvalString(goFuncCallName + `();`)
-	ctx.DestroyHeap()
-}
-
-func TestGoFuncCallWWrongArg(t *testing.T) {
-	defer func() {
-		r := recover()
-		expect(t, r, "Wrong type of function's key argument")
-	}()
-	ctx := Default()
-	ctx.EvalString(goFuncCallName + `(0); // first argument must be a string`)
-	ctx.DestroyHeap()
-}
-
-func TestGoFuncCallWWrongFuncName(t *testing.T) {
-	defer func() {
-		r := recover()
-		expect(t, r, "Unimplemented")
-	}()
-	ctx := Default()
-	ctx.EvalString(goFuncCallName + `('noFunctionName'); // this func is not defined`)
-	ctx.DestroyHeap()
-}
-
 func TestPushGlobalGoFunction_Call(t *testing.T) {
 	var check bool
-	ctx := Default()
+	ctx := New()
 	ctx.PushGlobalGoFunction("test", func(c *Context) int {
 		check = !check
 		return 0
 	})
-	expect(t, len(ctx.fn), 1)
-	for k, _ := range ctx.fn {
-		ctx.EvalString(goFuncCallName + `('` + k + `');`)
-		expect(t, check, true)
-		ctx.EvalString(goFuncCallName + `('` + k + `');`)
-		expect(t, check, false)
-		break
-	}
+
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
+	ctx.EvalString("test();")
+	expect(t, check, true)
+	ctx.EvalString("test();")
+	expect(t, check, false)
 
 	ctx.DestroyHeap()
 }
 
 func TestPushGlobalGoFunction_Finalize(t *testing.T) {
-	ctx := Default()
+	ctx := New()
 	ctx.PushGlobalGoFunction("test", func(c *Context) int {
 		return 0
 	})
 
-	expect(t, len(ctx.fn), 1)
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
 	ctx.EvalString("test = undefined")
 	ctx.Gc(0)
-	expect(t, len(ctx.fn), 0)
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 0)
 
 	ctx.DestroyHeap()
 }
 
 func TestPushGoFunction_Call(t *testing.T) {
 	var check bool
-	ctx := Default()
-	name, err := ctx.PushGoFunction(func(c *Context) int {
+	ctx := New()
+	ctx.PushGlobalObject()
+	err := ctx.PushGoFunction(func(c *Context) int {
 		check = !check
 		return 0
 	})
 
-	expect(t, err, nil)
-	expect(t, len(ctx.fn), 1)
+	ctx.PutPropString(-2, "test")
+	ctx.Pop()
 
-	ctx.EvalString(goFuncCallName + `('` + name + `');`)
+	expect(t, err, nil)
+	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
+
+	ctx.EvalString("test();")
 	expect(t, check, true)
-	ctx.EvalString(goFuncCallName + `('` + name + `');`)
+	ctx.EvalString("test();")
 	expect(t, check, false)
 
 	ctx.DestroyHeap()
 }
 
 func TestErrorObj(t *testing.T) {
-	ctx := Default()
+	ctx := New()
 	defer ctx.DestroyHeap()
 	ctx.PushErrorObject(ErrType, "Got an error thingy: ", 5)
 	expectError(t, ctx, ErrType, "TypeError: Got an error thingy: 5")
 
-	ctx = Default()
+	ctx = New()
 	defer ctx.DestroyHeap()
 	ctx.PushErrorObjectf(ErrURI, "Got an error thingy: %x", 0xdeadbeef)
 	expectError(t, ctx, ErrURI, "URIError: Got an error thingy: deadbeef")
@@ -116,7 +88,7 @@ func goTestfunc(ctx *Context) int {
 }
 
 func TestMyAddTwo(t *testing.T) {
-	ctx := Default()
+	ctx := New()
 	ctx.PushGlobalGoFunction("adder", goTestfunc)
 	ctx.EvalString(`print("2 + 3 =", adder(2,3))`)
 	ctx.Pop()
