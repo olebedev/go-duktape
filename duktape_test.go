@@ -1,82 +1,78 @@
 package duktape
 
 import (
-	"reflect"
 	"testing"
+
+	. "gopkg.in/check.v1"
 )
 
-func TestEvalString(t *testing.T) {
-	ctx := New()
-	ctx.EvalString(`"Golang love Duktape!"`)
-	expect(t, Type(ctx.GetType(-1)).IsString(), true)
-	expect(t, ctx.GetString(-1), "Golang love Duktape!")
-	ctx.DestroyHeap()
+// Hook up gocheck into the "go test" runner.
+func Test(t *testing.T) { TestingT(t) }
+
+var _ = Suite(&DuktapeSuite{})
+
+type DuktapeSuite struct {
+	ctx *Context
 }
 
-func TestPushGlobalGoFunction_Call(t *testing.T) {
+func (s *DuktapeSuite) SetUpTest(c *C) {
+	s.ctx = New()
+}
+
+func (s *DuktapeSuite) TestPushGlobalGoFunction_Call(c *C) {
 	var check bool
-	ctx := New()
-	ctx.PushGlobalGoFunction("test", func(c *Context) int {
+	err := s.ctx.PushGlobalGoFunction("test", func(c *Context) int {
 		check = !check
 		return 0
 	})
 
-	expect(t, len(ctx.fnIndex.functions), 1)
-	ctx.PevalString("test();")
-	expect(t, check, true)
-	ctx.PevalString("test();")
-	expect(t, check, false)
+	c.Assert(err, IsNil)
+	c.Assert(s.ctx.fnIndex.functions, HasLen, 1)
 
-	ctx.DestroyHeap()
+	err = s.ctx.PevalString("test();")
+	c.Assert(err, IsNil)
+	c.Assert(check, Equals, true)
+
+	err = s.ctx.PevalString("test();")
+	c.Assert(err, IsNil)
+	c.Assert(check, Equals, false)
 }
 
-func TestPushGlobalGoFunction_Finalize(t *testing.T) {
-	ctx := New()
-	ctx.PushGlobalGoFunction("test", func(c *Context) int {
+func (s *DuktapeSuite) TestPushGlobalGoFunction_Finalize(c *C) {
+	s.ctx.PushGlobalGoFunction("test", func(c *Context) int {
 		return 0
 	})
 
-	expect(t, len(ctx.fnIndex.functions), 1)
-	ctx.PevalString("test = undefined")
-	ctx.Gc(0)
-	expect(t, len(ctx.fnIndex.functions), 0)
+	c.Assert(s.ctx.fnIndex.functions, HasLen, 1)
 
-	ctx.DestroyHeap()
+	err := s.ctx.PevalString("test = undefined")
+	c.Assert(err, IsNil)
+
+	s.ctx.Gc(0)
+	c.Assert(s.ctx.fnIndex.functions, HasLen, 0)
 }
 
-func TestPushGoFunction_Call(t *testing.T) {
+func (s *DuktapeSuite) TestPushGoFunction_Call(c *C) {
 	var check bool
-	ctx := New()
-	ctx.PushGlobalObject()
-	err := ctx.PushGoFunction(func(c *Context) int {
+	s.ctx.PushGlobalObject()
+	err := s.ctx.PushGoFunction(func(c *Context) int {
 		check = !check
 		return 0
 	})
+	c.Assert(err, IsNil)
 
-	ctx.PutPropString(-2, "test")
-	ctx.Pop()
+	s.ctx.PutPropString(-2, "test")
+	s.ctx.Pop()
 
-	expect(t, err, nil)
-	expect(t, len(ctx.fnIndex.functions), 1)
+	c.Assert(s.ctx.fnIndex.functions, HasLen, 1)
 
-	ctx.PevalString("test();")
-	expect(t, check, true)
-	ctx.PevalString("test();")
-	expect(t, check, false)
+	err = s.ctx.PevalString("test();")
+	c.Assert(err, IsNil)
+	c.Assert(check, Equals, true)
 
-	ctx.DestroyHeap()
-}
-
-func TestErrorObj(t *testing.T) {
-	ctx := New()
-	defer ctx.DestroyHeap()
-	ctx.PushErrorObject(ErrType, "Got an error thingy: ", 5)
-	expectError(t, ctx, ErrType, "TypeError: Got an error thingy: 5")
-
-	ctx = New()
-	defer ctx.DestroyHeap()
-	ctx.PushErrorObjectf(ErrURI, "Got an error thingy: %x", 0xdeadbeef)
-	expectError(t, ctx, ErrURI, "URIError: Got an error thingy: deadbeef")
+	err = s.ctx.PevalString("test();")
+	c.Assert(err, IsNil)
+	c.Assert(check, Equals, false)
 }
 
 func goTestfunc(ctx *Context) int {
@@ -87,33 +83,19 @@ func goTestfunc(ctx *Context) int {
 	return 1
 }
 
-func TestMyAddTwo(t *testing.T) {
-	ctx := New()
-	ctx.PushGlobalGoFunction("adder", goTestfunc)
-	ctx.PevalString(`print("2 + 3 =", adder(2,3))`)
-	ctx.Pop()
-	ctx.PevalString(`adder(2,3)`)
-	result := ctx.GetNumber(-1)
-	expect(t, result, float64(5))
-	ctx.DestroyHeap()
+func (s *DuktapeSuite) TestMyAddTwo(c *C) {
+	s.ctx.PushGlobalGoFunction("adder", goTestfunc)
+	err := s.ctx.PevalString(`print("2 + 3 =", adder(2,3))`)
+	c.Assert(err, IsNil)
+
+	s.ctx.Pop()
+
+	err = s.ctx.PevalString(`adder(2,3)`)
+	c.Assert(err, IsNil)
+
+	c.Assert(s.ctx.GetNumber(-1), Equals, 5.0)
 }
 
-func expect(t *testing.T, a interface{}, b interface{}) {
-	if a != b {
-		t.Errorf("Expected %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
-	}
-}
-
-func expectError(t *testing.T, ctx *Context, code int, errMsg string) {
-	if !ctx.IsError(-1) {
-		t.Errorf("Expected Error type, got %v", ctx.GetType(-1))
-	}
-
-	if got := ctx.GetErrorCode(-1); code != code {
-		t.Errorf("Expected error %#v, got %#v", code, got)
-	}
-
-	if msg := ctx.SafeToString(-1); msg != errMsg {
-		t.Errorf("Expected message %q, got %q", errMsg, msg)
-	}
+func (s *DuktapeSuite) TearDownTest(c *C) {
+	s.ctx.DestroyHeap()
 }

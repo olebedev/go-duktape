@@ -1,25 +1,41 @@
 package duktape
 
-import "testing"
+import . "gopkg.in/check.v1"
 
-func TestPevalString(t *testing.T) {
-	ctx := New()
-	err := ctx.PevalString("var = 'foo';")
-	expect(t, err.(*Error).Type, "SyntaxError")
-	ctx.DestroyHeap()
+func (s *DuktapeSuite) TestPevalString(c *C) {
+	s.ctx.EvalString(`"Golang love Duktape!"`)
+	c.Assert(s.ctx.IsString(-1), Equals, true)
+	c.Assert(s.ctx.GetString(-1), Equals, "Golang love Duktape!")
 }
 
-func TestPevalFile(t *testing.T) {
-	ctx := New()
-	err := ctx.PevalFile("foo.js")
-	expect(t, err.(*Error).Message, "no sourcecode")
-	ctx.DestroyHeap()
+func (s *DuktapeSuite) TestPevalString_Error(c *C) {
+	err := s.ctx.PevalString("var = 'foo';")
+	c.Assert(err.(*Error).Type, Equals, "SyntaxError")
 }
 
-func TestPcompileString(t *testing.T) {
-	ctx := New()
-	err := ctx.PcompileString(CompileFunction, "foo")
-	expect(t, err.(*Error).Type, "SyntaxError")
-	expect(t, err.(*Error).LineNumber, 1)
-	ctx.DestroyHeap()
+func (s *DuktapeSuite) TestPevalFile_Error(c *C) {
+	err := s.ctx.PevalFile("foo.js")
+	c.Assert(err.(*Error).Message, Equals, "no sourcecode")
+}
+
+func (s *DuktapeSuite) TestPcompileString(c *C) {
+	err := s.ctx.PcompileString(CompileFunction, "foo")
+	c.Assert(err.(*Error).Type, Equals, "SyntaxError")
+	c.Assert(err.(*Error).LineNumber, Equals, 1)
+}
+
+func (s *DuktapeSuite) TestPushErrorObject(c *C) {
+	s.ctx.PushErrorObject(ErrType, "Got an error thingy: ", 5)
+	s.assertErrorInCtx(c, ErrType, "TypeError: Got an error thingy: 5")
+}
+
+func (s *DuktapeSuite) TestPushErrorObjectf(c *C) {
+	s.ctx.PushErrorObjectf(ErrURI, "Got an error thingy: %x", 0xdeadbeef)
+	s.assertErrorInCtx(c, ErrURI, "URIError: Got an error thingy: deadbeef")
+}
+
+func (s *DuktapeSuite) assertErrorInCtx(c *C, code int, msg string) {
+	c.Assert(s.ctx.IsError(-1), Equals, true)
+	c.Assert(s.ctx.GetErrorCode(-1), Equals, code)
+	c.Assert(s.ctx.SafeToString(-1), Equals, msg)
 }
