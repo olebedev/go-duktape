@@ -21,10 +21,10 @@ func TestPushGlobalGoFunction_Call(t *testing.T) {
 		return 0
 	})
 
-	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
-	ctx.EvalString("test();")
+	expect(t, len(ctx.fnIndex.functions), 1)
+	ctx.PevalString("test();")
 	expect(t, check, true)
-	ctx.EvalString("test();")
+	ctx.PevalString("test();")
 	expect(t, check, false)
 
 	ctx.DestroyHeap()
@@ -36,10 +36,10 @@ func TestPushGlobalGoFunction_Finalize(t *testing.T) {
 		return 0
 	})
 
-	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
-	ctx.EvalString("test = undefined")
+	expect(t, len(ctx.fnIndex.functions), 1)
+	ctx.PevalString("test = undefined")
 	ctx.Gc(0)
-	expect(t, len(fnIndexes[ctx.duk_context].functions), 0)
+	expect(t, len(ctx.fnIndex.functions), 0)
 
 	ctx.DestroyHeap()
 }
@@ -57,11 +57,11 @@ func TestPushGoFunction_Call(t *testing.T) {
 	ctx.Pop()
 
 	expect(t, err, nil)
-	expect(t, len(fnIndexes[ctx.duk_context].functions), 1)
+	expect(t, len(ctx.fnIndex.functions), 1)
 
-	ctx.EvalString("test();")
+	ctx.PevalString("test();")
 	expect(t, check, true)
-	ctx.EvalString("test();")
+	ctx.PevalString("test();")
 	expect(t, check, false)
 
 	ctx.DestroyHeap()
@@ -90,9 +90,9 @@ func goTestfunc(ctx *Context) int {
 func TestMyAddTwo(t *testing.T) {
 	ctx := New()
 	ctx.PushGlobalGoFunction("adder", goTestfunc)
-	ctx.EvalString(`print("2 + 3 =", adder(2,3))`)
+	ctx.PevalString(`print("2 + 3 =", adder(2,3))`)
 	ctx.Pop()
-	ctx.EvalString(`adder(2,3)`)
+	ctx.PevalString(`adder(2,3)`)
 	result := ctx.GetNumber(-1)
 	expect(t, result, float64(5))
 	ctx.DestroyHeap()
