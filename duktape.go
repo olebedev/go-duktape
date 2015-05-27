@@ -20,8 +20,8 @@ import (
 var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
 
 const (
-	goFunctionPtrProp = "_go_function_ptr"
-	goContextPtrProp  = "_go_context_ptr"
+	goFunctionPtrProp = "__goFunctionPtrProp__"
+	goContextPtrProp  = "__goContextPtrProp__"
 )
 
 type Context struct {
@@ -35,21 +35,21 @@ func (c *Context) transmute(p unsafe.Pointer) {
 
 // this is a pojo containing only the values of the Context
 type context struct {
-	cContext unsafe.Pointer
-	fnIndex  *functionIndex
+	duk_context unsafe.Pointer
+	fnIndex     *functionIndex
 }
 
 // New returns plain initialized duktape context object
 // See: http://duktape.org/api.html#duk_create_heap_default
 func New() *Context {
 	return &Context{&context{
-		cContext: C.duk_create_heap(nil, nil, nil, nil, nil),
-		fnIndex:  newFunctionIndex(),
+		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
+		fnIndex:     newFunctionIndex(),
 	}}
 }
 
 func contextFromPointer(ctx unsafe.Pointer) *Context {
-	return &Context{&context{cContext: ctx}}
+	return &Context{&context{duk_context: ctx}}
 }
 
 // PushGlobalGoFunction push the given function into duktape global object
