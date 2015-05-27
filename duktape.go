@@ -17,24 +17,39 @@ import (
 	"unsafe"
 )
 
-var (
-	reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
-	fnIndexes  = make(map[unsafe.Pointer]*functionIndex, 0)
+var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
+
+const (
+	goFunctionPtrProp = "__goFunctionPtrProp__"
+	goContextPtrProp  = "__goContextPtrProp__"
 )
 
-const goFunctionPtrProp = "_go_function_ptr"
-
 type Context struct {
+	*context
+}
+
+// transmute replaces the value from Context with the value of pointer
+func (c *Context) transmute(p unsafe.Pointer) {
+	*c = *(*Context)(p)
+}
+
+// this is a pojo containing only the values of the Context
+type context struct {
 	duk_context unsafe.Pointer
+	fnIndex     *functionIndex
 }
 
 // New returns plain initialized duktape context object
 // See: http://duktape.org/api.html#duk_create_heap_default
 func New() *Context {
-	duk_context := C.duk_create_heap(nil, nil, nil, nil, nil)
-	fnIndexes[duk_context] = newFunctionIndex()
+	return &Context{&context{
+		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
+		fnIndex:     newFunctionIndex(),
+	}}
+}
 
-	return &Context{duk_context}
+func contextFromPointer(ctx unsafe.Pointer) *Context {
+	return &Context{&context{duk_context: ctx}}
 }
 
 // PushGlobalGoFunction push the given function into duktape global object
@@ -56,53 +71,64 @@ func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) error
 
 // PushGoFunction push the given function into duktape stack
 func (d *Context) PushGoFunction(fn func(*Context) int) error {
-	ptr := fnIndexes[d.duk_context].Add(fn)
+	funPtr := d.fnIndex.Add(fn)
+	ctxPtr := unsafe.Pointer(d)
 
 	d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
 	d.PushCFunction((*[0]byte)(C.goFinalizeCall), 1)
-	d.PushPointer(ptr)
+	d.PushPointer(funPtr)
 	d.PutPropString(-2, goFunctionPtrProp)
+	d.PushPointer(ctxPtr)
+	d.PutPropString(-2, goContextPtrProp)
 	d.SetFinalizer(-2)
 
-	d.PushPointer(ptr)
+	d.PushPointer(funPtr)
 	d.PutPropString(-2, goFunctionPtrProp)
+	d.PushPointer(ctxPtr)
+	d.PutPropString(-2, goContextPtrProp)
 
 	return nil
 }
 
 //export goFunctionCall
-func goFunctionCall(ctx unsafe.Pointer) C.duk_ret_t {
-	d := &Context{duk_context: ctx}
-	ptr := d.getGoFunctionPtr()
+func goFunctionCall(cCtx unsafe.Pointer) C.duk_ret_t {
+	d := contextFromPointer(cCtx)
 
-	result := fnIndexes[d.duk_context].Get(ptr)(d)
+	funPtr, ctxPtr := d.getFunctionPtrs()
+	d.transmute(ctxPtr)
+
+	result := d.fnIndex.Get(funPtr)(d)
+
 	return C.duk_ret_t(result)
 }
 
 //export goFinalizeCall
-func goFinalizeCall(ctx unsafe.Pointer) {
-	d := &Context{duk_context: ctx}
-	ptr := d.getGoFunctionPtr()
+func goFinalizeCall(cCtx unsafe.Pointer) {
+	d := contextFromPointer(cCtx)
 
-	fnIndexes[d.duk_context].Delete(ptr)
+	funPtr, ctxPtr := d.getFunctionPtrs()
+	d.transmute(ctxPtr)
+
+	d.fnIndex.Delete(funPtr)
 }
 
-func (d *Context) getGoFunctionPtr() unsafe.Pointer {
+func (d *Context) getFunctionPtrs() (funPtr, ctxPtr unsafe.Pointer) {
 	d.PushCurrentFunction()
 	d.GetPropString(-1, goFunctionPtrProp)
-	defer func() {
-		d.Pop2()
-	}()
+	funPtr = d.GetPointer(-1)
 
-	if !d.IsPointer(-1) {
-		return nil
-	}
+	d.Pop()
 
-	return d.GetPointer(-1)
+	d.GetPropString(-1, goContextPtrProp)
+	ctxPtr = d.GetPointer(-1)
+
+	d.Pop2()
+	return
 }
 
+// Destroy destroy all the references to the functions and freed the pointers
 func (d *Context) Destroy() {
-
+	d.fnIndex.Destroy()
 }
 
 type Error struct {
@@ -191,4 +217,14 @@ func (i *functionIndex) Delete(ptr unsafe.Pointer) {
 
 	delete(i.functions, ptr)
 	C.free(ptr)
+}
+
+func (i *functionIndex) Destroy() {
+	i.Lock()
+	defer i.Unlock()
+
+	for ptr, _ := range i.functions {
+		delete(i.functions, ptr)
+		C.free(ptr)
+	}
 }

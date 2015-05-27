@@ -435,7 +435,7 @@ func (d *Context) GetBuffer(index int, outSize int) {
 
 // See: http://duktape.org/api.html#duk_get_context
 func (d *Context) GetContext(index int) *Context {
-	return &Context{duk_context: C.duk_get_context(d.duk_context, C.duk_idx_t(index))}
+	return contextFromPointer(C.duk_get_context(d.duk_context, C.duk_idx_t(index)))
 }
 
 // See: http://duktape.org/api.html#duk_get_current_magic
@@ -1081,7 +1081,6 @@ func (d *Context) PushString(str string) string {
 	return ""
 }
 
-// TODO: return string
 // See: http://duktape.org/api.html#duk_push_string_file
 func (d *Context) PushStringFile(path string) string {
 	__path__ := C.CString(path)
@@ -1173,7 +1172,7 @@ func (d *Context) RequireBuffer(index int, outSize int) {
 
 // See: http://duktape.org/api.html#duk_require_context
 func (d *Context) RequireContext(index int) *Context {
-	return &Context{duk_context: C.duk_require_context(d.duk_context, C.duk_idx_t(index))}
+	return contextFromPointer(C.duk_require_context(d.duk_context, C.duk_idx_t(index)))
 }
 
 // See: http://duktape.org/api.html#duk_require_heapptr
