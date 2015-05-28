@@ -21,12 +21,14 @@ func (s *DuktapeSuite) SetUpTest(c *C) {
 
 func (s *DuktapeSuite) TestPushGlobalGoFunction_Call(c *C) {
 	var check bool
-	err := s.ctx.PushGlobalGoFunction("test", func(c *Context) int {
+	idx, err := s.ctx.PushGlobalGoFunction("test", func(c *Context) int {
 		check = !check
 		return 0
 	})
 
 	c.Assert(err, IsNil)
+	c.Assert(idx, Not(Equals), -1)
+
 	c.Assert(s.ctx.fnIndex.functions, HasLen, 1)
 
 	err = s.ctx.PevalString("test();")
@@ -36,6 +38,15 @@ func (s *DuktapeSuite) TestPushGlobalGoFunction_Call(c *C) {
 	err = s.ctx.PevalString("test();")
 	c.Assert(err, IsNil)
 	c.Assert(check, Equals, false)
+}
+
+func (s *DuktapeSuite) TestPushGlobalGoFunction_Malformed(c *C) {
+	idx, err := s.ctx.PushGlobalGoFunction(".", func(c *Context) int {
+		return 0
+	})
+
+	c.Assert(err, ErrorMatches, "Malformed function name '.'")
+	c.Assert(idx, Equals, -1)
 }
 
 func (s *DuktapeSuite) TestPushGlobalGoFunction_Finalize(c *C) {
@@ -55,18 +66,17 @@ func (s *DuktapeSuite) TestPushGlobalGoFunction_Finalize(c *C) {
 func (s *DuktapeSuite) TestPushGoFunction_Call(c *C) {
 	var check bool
 	s.ctx.PushGlobalObject()
-	err := s.ctx.PushGoFunction(func(c *Context) int {
+	s.ctx.PushGoFunction(func(c *Context) int {
 		check = !check
 		return 0
 	})
-	c.Assert(err, IsNil)
 
 	s.ctx.PutPropString(-2, "test")
 	s.ctx.Pop()
 
 	c.Assert(s.ctx.fnIndex.functions, HasLen, 1)
 
-	err = s.ctx.PevalString("test();")
+	err := s.ctx.PevalString("test();")
 	c.Assert(err, IsNil)
 	c.Assert(check, Equals, true)
 
