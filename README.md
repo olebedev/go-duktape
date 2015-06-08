@@ -11,7 +11,7 @@ import "fmt"
 import "github.com/olebedev/go-duktape"
 
 func main() {
-  ctx := duktape.NewContext()
+  ctx := duktape.New()
   ctx.EvalString(`2 + 3`)
   result := ctx.GetNumber(-1)
   ctx.Pop()
@@ -30,27 +30,57 @@ import "fmt"
 import "github.com/olebedev/go-duktape"
 
 func main() {
-  ctx := duktape.NewContext()
-  ctx.PushGlobalGoFunction("log", func(ctx *duktape.Context) int {
-    fmt.Println("Go lang Go!")
+  ctx := duktape.New()
+  ctx.PushGlobalGoFunction("log", func(c *duktape.Context) int {
+    fmt.Println(c.SafeToString(-1))
     return 0
   })
-  ctx.EvalString(`log()`)
+  ctx.EvalString(`log('Go lang Go!')`)
 }
 ```
 than run it.
 ```bash
-$ go run
-$ Go lang Go!
+$ go run *.go
+Go lang Go!
+$
 ```
 
 ### Timers
 
-There is a method to inject implemented in Go timers to the global scope:
+There is a method to inject to the global scope implemented in Go timers:
 ```go
-ctx.DefineTimers()
+package main
+
+import "fmt"
+import "github.com/olebedev/go-duktape"
+
+func main() {
+  ctx := duktape.New()
+
+  // Let's inject `setTimeout`, `setInterval`, `clearTimeout`,
+  // `clearInterval` into global scope.
+  ctx.DefineTimers()
+
+  ch := make(chan string)
+  ctx.PushGlobalGoFunction("second", func(_ *Context) int {
+    ch <- "second step"
+    return 0
+  })
+  ctx.PevalString(`
+    setTimeout(second, 1);
+    print('first step');
+  `)
+  fmt.Println(<-ch)
+}
 ```
-this method will add `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval` into global scope.
+than run it
+```bash
+$ go run *.go
+first step
+second step
+$
+```
+
 
 ### Status
 
