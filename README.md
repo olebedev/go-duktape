@@ -44,6 +44,14 @@ $ go run
 $ Go lang Go!
 ```
 
+### Timers
+
+There is a method to inject implemented in Go timers to the global scope:
+```go
+ctx.DefineTimers()
+```
+this method will add `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval` into global scope.
+
 ### Status
 
 The package is not fully tested, so be careful.
