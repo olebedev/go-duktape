@@ -19,6 +19,9 @@ func (d *Context) DefineTimers() {
 func setTimeout(c *Context) int {
 	id := c.pushTimer(0)
 	timeout := c.ToNumber(1)
+	if timeout < 1 {
+		timeout = 1
+	}
 	go func(id float64) {
 		<-time.After(time.Duration(timeout) * time.Millisecond)
 		// check if timer still exists
@@ -42,6 +45,9 @@ func clearTimeout(c *Context) int {
 func setInterval(c *Context) int {
 	id := c.pushTimer(0)
 	timeout := c.ToNumber(1)
+	if timeout < 1 {
+		timeout = 1
+	}
 	go func(id float64) {
 		ticker := time.NewTicker(time.Duration(timeout) * time.Millisecond)
 		for _ = range ticker.C {

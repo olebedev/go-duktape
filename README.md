@@ -67,7 +67,7 @@ func main() {
     return 0
   })
   ctx.PevalString(`
-    setTimeout(second, 1);
+    setTimeout(second, 0);
     print('first step');
   `)
   fmt.Println(<-ch)

@@ -13,7 +13,7 @@ func (s *DuktapeSuite) TestSetTimeOut(c *C) {
 		ch <- struct{}{}
 		return 0
 	})
-	s.ctx.PevalString(`setTimeout(test, 1);`)
+	s.ctx.PevalString(`setTimeout(test, 0);`)
 	<-ch
 	c.Succeed()
 }
@@ -26,7 +26,7 @@ func (s *DuktapeSuite) TestClearTimeOut(c *C) {
 		return 0
 	})
 	s.ctx.PevalString(`
-		var id = setTimeout(test, 1);
+		var id = setTimeout(test, 0);
 		clearTimeout(id);
 	`)
 	<-time.After(2 * time.Millisecond)
@@ -46,14 +46,14 @@ func (s *DuktapeSuite) TestSetInterval(c *C) {
 		return 0
 	})
 
-	s.ctx.PevalString(`var id = setInterval(test, 1);`)
+	s.ctx.PevalString(`var id = setInterval(test, 0);`)
 
 	<-ch
 	<-ch
 	<-ch
 	s.ctx.PevalString(`clearInterval(id);`)
 
-	<-time.After(2 * time.Millisecond)
+	<-time.After(4 * time.Millisecond)
 	select {
 	case <-ch:
 		c.Fail()
