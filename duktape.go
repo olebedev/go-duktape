@@ -37,6 +37,7 @@ func (c *Context) transmute(p unsafe.Pointer) {
 type context struct {
 	duk_context unsafe.Pointer
 	fnIndex     *functionIndex
+	timerIndex  *timerIndex
 }
 
 // New returns plain initialized duktape context object
@@ -45,6 +46,7 @@ func New() *Context {
 	return &Context{&context{
 		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
 		fnIndex:     newFunctionIndex(),
+		timerIndex:  &timerIndex{},
 	}}
 }
 
@@ -186,6 +188,18 @@ func (t Type) String() string {
 type functionIndex struct {
 	functions map[unsafe.Pointer]func(*Context) int
 	sync.Mutex
+}
+
+type timerIndex struct {
+	c float64
+	sync.Mutex
+}
+
+func (t *timerIndex) get() float64 {
+	t.Lock()
+	defer t.Unlock()
+	t.c++
+	return t.c
 }
 
 func newFunctionIndex() *functionIndex {
