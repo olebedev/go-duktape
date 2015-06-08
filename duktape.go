@@ -55,28 +55,28 @@ func contextFromPointer(ctx unsafe.Pointer) *Context {
 }
 
 // PushGlobalGoFunction push the given function into duktape global object
-func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) error {
+// Returns non-negative index (relative to stack bottom) of the pushed function
+// also returns error if the function name is invalid
+func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) (int, error) {
 	if !reFuncName.MatchString(name) {
-		return errors.New("Malformed function name '" + name + "'")
+		return -1, errors.New("Malformed function name '" + name + "'")
 	}
 
 	d.PushGlobalObject()
-	if err := d.PushGoFunction(fn); err != nil {
-		return err
-	}
-
+	idx := d.PushGoFunction(fn)
 	d.PutPropString(-2, name)
 	d.Pop()
 
-	return nil
+	return idx, nil
 }
 
-// PushGoFunction push the given function into duktape stack
-func (d *Context) PushGoFunction(fn func(*Context) int) error {
+// PushGoFunction push the given function into duktape stack, returns non-negative
+// index (relative to stack bottom) of the pushed function
+func (d *Context) PushGoFunction(fn func(*Context) int) int {
 	funPtr := d.fnIndex.Add(fn)
 	ctxPtr := unsafe.Pointer(d)
 
-	d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
+	idx := d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
 	d.PushCFunction((*[0]byte)(C.goFinalizeCall), 1)
 	d.PushPointer(funPtr)
 	d.PutPropString(-2, goFunctionPtrProp)
@@ -89,7 +89,7 @@ func (d *Context) PushGoFunction(fn func(*Context) int) error {
 	d.PushPointer(ctxPtr)
 	d.PutPropString(-2, goContextPtrProp)
 
-	return nil
+	return idx
 }
 
 //export goFunctionCall

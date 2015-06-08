@@ -1,9 +1,6 @@
 package duktape
 
-import (
-	"fmt"
-	"time"
-)
+import "time"
 
 // DefineTimers defines `setTimeout`, `clearTimeout`, `setInterval`,
 // `clearInterval` into global context.
@@ -14,6 +11,9 @@ func (d *Context) DefineTimers() {
 	d.Pop2()
 
 	d.PushGlobalGoFunction("setTimeout", setTimeout)
+	d.PushGlobalGoFunction("setInterval", setInterval)
+	d.PushGlobalGoFunction("clearTimeout", clearTimeout)
+	d.PushGlobalGoFunction("clearInterval", clearTimeout)
 }
 
 func setTimeout(c *Context) int {
@@ -21,13 +21,39 @@ func setTimeout(c *Context) int {
 	timeout := c.ToNumber(1)
 	go func(id float64) {
 		<-time.After(time.Duration(timeout) * time.Millisecond)
+		// check if timer still exists
 		c.putTimer(id)
-		// TODO: check if timer still exists
-		// if c.GetType(-1).IsLightFunc() {
-		// }
-		fmt.Println("timer time is", c.GetType(-1))
-		c.Pcall(0 /* nargs */)
+		if c.GetType(-1).IsObject() {
+			c.Pcall(0 /* nargs */)
+		}
 		c.dropTimer(id)
+	}(id)
+	c.PushNumber(id)
+	return 1
+}
+
+func clearTimeout(c *Context) int {
+	if c.GetType(0).IsNumber() {
+		c.dropTimer(c.GetNumber(0))
+	}
+	return 0
+}
+
+func setInterval(c *Context) int {
+	id := c.pushTimer(0)
+	timeout := c.ToNumber(1)
+	go func(id float64) {
+		ticker := time.NewTicker(time.Duration(timeout) * time.Millisecond)
+		for _ = range ticker.C {
+			// check if timer still exists
+			c.putTimer(id)
+			if c.GetType(-1).IsObject() {
+				c.Pcall(0 /* nargs */)
+			} else {
+				c.dropTimer(id)
+				ticker.Stop()
+			}
+		}
 	}(id)
 	c.PushNumber(id)
 	return 1
@@ -39,7 +65,7 @@ func (d *Context) pushTimer(index int) float64 {
 	d.PushGlobalStash()
 	d.GetPropString(-1, "timers")
 	d.PushNumber(id)
-	d.Dup(index) // cbk index
+	d.Dup(index)
 	d.PutProp(-3)
 	d.Pop2()
 
@@ -51,15 +77,11 @@ func (d *Context) dropTimer(id float64) {
 	d.GetPropString(-1, "timers")
 	d.PushNumber(id)
 	d.DelProp(-2)
-
-	d.PushContextDump()
-	d.Pop()
-
 }
 
 func (d *Context) putTimer(id float64) {
-	d.PushGlobalStash()           // -> [ timers: { <id>: { func: true } } ]
-	d.GetPropString(-1, "timers") // -> [ timers: { <id>: { func: true } } }, { <id>: { func: true } ]
+	d.PushGlobalStash()           // stash -> [ timers: { <id>: { func: true } } ]
+	d.GetPropString(-1, "timers") // stash -> [ timers: { <id>: { func: true } } }, { <id>: { func: true } ]
 	d.PushNumber(id)
-	d.GetProp(-1)
+	d.GetProp(-2)
 }
