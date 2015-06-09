@@ -6,6 +6,11 @@ import (
 	. "gopkg.in/check.v1"
 )
 
+func (s *DuktapeSuite) TestCheckTheStack(c *C) {
+	s.ctx.DefineTimers()
+	c.Assert(s.ctx.GetTop(), Equals, 0)
+}
+
 func (s *DuktapeSuite) TestSetTimeOut(c *C) {
 	ch := make(chan struct{})
 	s.ctx.DefineTimers()

@@ -8,7 +8,7 @@ func (d *Context) DefineTimers() {
 	d.PushGlobalStash()
 	d.PushObject()
 	d.PutPropString(-2, "timers") // stash -> [ timers:{} ]
-	d.Pop2()
+	d.Pop()
 
 	d.PushGlobalGoFunction("setTimeout", setTimeout)
 	d.PushGlobalGoFunction("setInterval", setInterval)
