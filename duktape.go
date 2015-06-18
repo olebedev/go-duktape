@@ -20,8 +20,8 @@ import (
 var reFuncName = regexp.MustCompile("^[a-z_][a-z0-9_]*([A-Z_][a-z0-9_]*)*$")
 
 const (
-	goFunctionPtrProp = "__goFunctionPtrProp__"
-	goContextPtrProp  = "__goContextPtrProp__"
+	goFunctionPtrProp = "\xff" + "goFunctionPtrProp"
+	goContextPtrProp  = "\xff" + "goContextPtrProp"
 )
 
 type Context struct {
