@@ -1,19 +1,25 @@
 package duktape
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // DefineTimers defines `setTimeout`, `clearTimeout`, `setInterval`,
 // `clearInterval` into global context.
 func (d *Context) DefineTimers() {
 	d.PushGlobalStash()
-	d.PushObject()
-	d.PutPropString(-2, "timers") // stash -> [ timers:{} ]
-	d.Pop()
+	// check if timers already exists
+	if !d.HasPropString(-1, "timers") {
+		d.PushObject()
+		d.PutPropString(-2, "timers") // stash -> [ timers:{} ]
+		d.Pop()
 
-	d.PushGlobalGoFunction("setTimeout", setTimeout)
-	d.PushGlobalGoFunction("setInterval", setInterval)
-	d.PushGlobalGoFunction("clearTimeout", clearTimeout)
-	d.PushGlobalGoFunction("clearInterval", clearTimeout)
+		d.PushGlobalGoFunction("setTimeout", setTimeout)
+		d.PushGlobalGoFunction("setInterval", setInterval)
+		d.PushGlobalGoFunction("clearTimeout", clearTimeout)
+		d.PushGlobalGoFunction("clearInterval", clearTimeout)
+	}
 }
 
 func setTimeout(c *Context) int {
@@ -24,6 +30,10 @@ func setTimeout(c *Context) int {
 	}
 	go func(id float64) {
 		<-time.After(time.Duration(timeout) * time.Millisecond)
+		if c.duk_context == nil {
+			fmt.Println("[duktape] Warning!\nsetTimeout invokes callback after the context was destroyed.")
+			return
+		}
 		// check if timer still exists
 		c.putTimer(id)
 		if c.GetType(-1).IsObject() {
@@ -51,6 +61,13 @@ func setInterval(c *Context) int {
 	go func(id float64) {
 		ticker := time.NewTicker(time.Duration(timeout) * time.Millisecond)
 		for _ = range ticker.C {
+			// check if duktape context exists
+			if c.duk_context == nil {
+				ticker.Stop()
+				fmt.Println("[duktape] Warning!\nsetInterval invokes callback after the context was destroyed.")
+				continue
+			}
+
 			// check if timer still exists
 			c.putTimer(id)
 			if c.GetType(-1).IsObject() {

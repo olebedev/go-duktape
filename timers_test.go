@@ -23,6 +23,16 @@ func (s *DuktapeSuite) TestSetTimeOut(c *C) {
 	c.Succeed()
 }
 
+func (s *DuktapeSuite) TestCrashProcess(c *C) {
+	s.ctx.DefineTimers()
+	s.ctx.PushGlobalGoFunction("test", func(_ *Context) int {
+		return 0
+	})
+	s.ctx.PevalString(`
+		var id = setTimeout(test, 2);
+	`)
+}
+
 func (s *DuktapeSuite) TestClearTimeOut(c *C) {
 	ch := make(chan struct{}, 1) // buffered channel
 	s.ctx.DefineTimers()
