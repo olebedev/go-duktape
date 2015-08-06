@@ -1,13 +1,14 @@
 package duktape
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
 
 // DefineTimers defines `setTimeout`, `clearTimeout`, `setInterval`,
 // `clearInterval` into global context.
-func (d *Context) DefineTimers() {
+func (d *Context) DefineTimers() error {
 	d.PushGlobalStash()
 	// check if timers already exists
 	if !d.HasPropString(-1, "timers") {
@@ -19,7 +20,18 @@ func (d *Context) DefineTimers() {
 		d.PushGlobalGoFunction("setInterval", setInterval)
 		d.PushGlobalGoFunction("clearTimeout", clearTimeout)
 		d.PushGlobalGoFunction("clearInterval", clearTimeout)
+		return nil
+	} else {
+		d.Pop()
+		return errors.New("Timers are already defined")
 	}
+}
+
+func (d *Context) ResetTimers() {
+	d.PushGlobalStash()
+	d.PushObject()
+	d.PutPropString(-2, "timers") // stash -> [ timers:{} ]
+	d.Pop()
 }
 
 func setTimeout(c *Context) int {
@@ -30,10 +42,13 @@ func setTimeout(c *Context) int {
 	}
 	go func(id float64) {
 		<-time.After(time.Duration(timeout) * time.Millisecond)
+		c.Lock()
+		defer c.Unlock()
 		if c.duk_context == nil {
 			fmt.Println("[duktape] Warning!\nsetTimeout invokes callback after the context was destroyed.")
 			return
 		}
+
 		// check if timer still exists
 		c.putTimer(id)
 		if c.GetType(-1).IsObject() {
@@ -48,6 +63,7 @@ func setTimeout(c *Context) int {
 func clearTimeout(c *Context) int {
 	if c.GetType(0).IsNumber() {
 		c.dropTimer(c.GetNumber(0))
+		c.Pop()
 	}
 	return 0
 }
@@ -61,10 +77,14 @@ func setInterval(c *Context) int {
 	go func(id float64) {
 		ticker := time.NewTicker(time.Duration(timeout) * time.Millisecond)
 		for _ = range ticker.C {
+			c.Lock()
 			// check if duktape context exists
 			if c.duk_context == nil {
+				c.dropTimer(id)
+				c.Pop()
 				ticker.Stop()
 				fmt.Println("[duktape] Warning!\nsetInterval invokes callback after the context was destroyed.")
+				c.Unlock()
 				continue
 			}
 
@@ -72,10 +92,13 @@ func setInterval(c *Context) int {
 			c.putTimer(id)
 			if c.GetType(-1).IsObject() {
 				c.Pcall(0 /* nargs */)
+				c.Pop()
 			} else {
 				c.dropTimer(id)
+				c.Pop()
 				ticker.Stop()
 			}
+			c.Unlock()
 		}
 	}(id)
 	c.PushNumber(id)
@@ -100,11 +123,14 @@ func (d *Context) dropTimer(id float64) {
 	d.GetPropString(-1, "timers")
 	d.PushNumber(id)
 	d.DelProp(-2)
+	d.Pop2()
 }
 
 func (d *Context) putTimer(id float64) {
-	d.PushGlobalStash()           // stash -> [ timers: { <id>: { func: true } } ]
-	d.GetPropString(-1, "timers") // stash -> [ timers: { <id>: { func: true } } }, { <id>: { func: true } ]
+	d.PushGlobalStash()           // stash -> [ ..., timers: { <id>: { func: true } } ]
+	d.GetPropString(-1, "timers") // stash -> [ ..., timers: { <id>: { func: true } } }, { <id>: { func: true } ]
 	d.PushNumber(id)
-	d.GetProp(-2)
+	d.GetProp(-2) // stash -> [ ..., timers: { <id>: { func: true } } }, { <id>: { func: true }, { func: true } ]
+	d.Replace(-3)
+	d.Pop()
 }

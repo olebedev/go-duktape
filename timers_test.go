@@ -7,19 +7,28 @@ import (
 )
 
 func (s *DuktapeSuite) TestCheckTheStack(c *C) {
-	s.ctx.DefineTimers()
-	c.Assert(s.ctx.GetTop(), Equals, 0)
+	s.ctx.PushInt(1)
+	err := s.ctx.DefineTimers()
+	c.Assert(err, IsNil)
+	c.Assert(s.ctx.GetTop(), Equals, 1)
+	err = s.ctx.DefineTimers()
+	c.Assert(err.Error(), Equals, "Timers are already defined")
 }
 
 func (s *DuktapeSuite) TestSetTimeOut(c *C) {
 	ch := make(chan struct{})
 	s.ctx.DefineTimers()
-	s.ctx.PushGlobalGoFunction("test", func(_ *Context) int {
+	s.ctx.PushGlobalGoFunction("test", func(ctx *Context) int {
+		ctx.PushNumber(2)
 		ch <- struct{}{}
-		return 0
+		return 1
 	})
 	s.ctx.PevalString(`setTimeout(test, 0);`)
+	c.Assert(s.ctx.SafeToString(-1), Equals, "1")
+	s.ctx.Pop()
 	<-ch
+	c.Assert(s.ctx.SafeToString(-1), Equals, "2")
+	s.ctx.PopN(s.ctx.GetTop())
 	c.Succeed()
 }
 
@@ -62,11 +71,12 @@ func (s *DuktapeSuite) TestSetInterval(c *C) {
 	})
 
 	s.ctx.PevalString(`var id = setInterval(test, 0);`)
-
+	s.ctx.Pop()
 	<-ch
 	<-ch
 	<-ch
 	s.ctx.PevalString(`clearInterval(id);`)
+	s.ctx.Pop() // pop undefined
 
 	<-time.After(4 * time.Millisecond)
 	select {
@@ -75,4 +85,15 @@ func (s *DuktapeSuite) TestSetInterval(c *C) {
 	default:
 		c.Succeed()
 	}
+}
+
+func (s *DuktapeSuite) TestResetTimers(c *C) {
+	s.ctx.DefineTimers()
+	s.ctx.PevalString(`setInterval(test, 2);`)
+	id := s.ctx.GetNumber(-1)
+	s.ctx.ResetTimers()
+	s.ctx.putTimer(id)
+
+	c.Assert(s.ctx.GetType(-1).IsUndefined(), Equals, true)
+	<-time.After(3 * time.Millisecond)
 }

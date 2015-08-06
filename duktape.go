@@ -35,6 +35,7 @@ func (c *Context) transmute(p unsafe.Pointer) {
 
 // this is a pojo containing only the values of the Context
 type context struct {
+	sync.Mutex
 	duk_context unsafe.Pointer
 	fnIndex     *functionIndex
 	timerIndex  *timerIndex
@@ -43,11 +44,13 @@ type context struct {
 // New returns plain initialized duktape context object
 // See: http://duktape.org/api.html#duk_create_heap_default
 func New() *Context {
-	return &Context{&context{
-		duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
-		fnIndex:     newFunctionIndex(),
-		timerIndex:  &timerIndex{},
-	}}
+	return &Context{
+		&context{
+			duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
+			fnIndex:     newFunctionIndex(),
+			timerIndex:  &timerIndex{},
+		},
+	}
 }
 
 func contextFromPointer(ctx unsafe.Pointer) *Context {
