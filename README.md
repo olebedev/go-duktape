@@ -73,7 +73,7 @@ func main() {
   fmt.Println(<-ch)
 }
 ```
-than run it
+then run it
 ```bash
 $ go run *.go
 first step
