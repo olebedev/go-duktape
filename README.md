@@ -38,7 +38,7 @@ func main() {
   ctx.EvalString(`log('Go lang Go!')`)
 }
 ```
-than run it.
+then run it.
 ```bash
 $ go run *.go
 Go lang Go!
