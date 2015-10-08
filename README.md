@@ -4,11 +4,16 @@ Most of the [api](http://duktape.org/api.html) is implemented.
 The exceptions are listed [here](https://github.com/olebedev/go-duktape/blob/master/api.go#L1679).
 
 ### Usage
+
+The package is fully go-getable, no need to install any external C libraries.  
+So, just type `go get gopkg.in/olebedev/go-duktape.v1` to install.
+
+
 ```go
 package main
 
 import "fmt"
-import "github.com/olebedev/go-duktape"
+import "gopkg.in/olebedev/go-duktape.v1"
 
 func main() {
   ctx := duktape.New()
@@ -27,7 +32,7 @@ However, binding a Go function to the Javascript context is available:
 package main
 
 import "fmt"
-import "github.com/olebedev/go-duktape"
+import "gopkg.in/olebedev/go-duktape.v1"
 
 func main() {
   ctx := duktape.New()
@@ -47,12 +52,12 @@ $
 
 ### Timers
 
-There is a method to inject to the global scope implemented in Go timers:
+There is a method to inject timers to the global scope:
 ```go
 package main
 
 import "fmt"
-import "github.com/olebedev/go-duktape"
+import "gopkg.in/olebedev/go-duktape.v1"
 
 func main() {
   ctx := duktape.New()
