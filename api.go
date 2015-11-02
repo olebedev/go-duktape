@@ -131,6 +131,9 @@ static void *_duk_to_dynamic_buffer(duk_context *ctx, duk_idx_t index, duk_size_
 static void *_duk_to_fixed_buffer(duk_context *ctx, duk_idx_t index, duk_size_t *out_size) {
 	return duk_to_fixed_buffer(ctx, index, out_size);
 }
+static duk_int_t _duk_is_primitive(duk_context *ctx, duk_idx_t index) {
+  return duk_is_primitive(ctx, index);
+}
 static void *_duk_push_buffer(duk_context *ctx, duk_size_t size, duk_bool_t dynamic) {
 	return duk_push_buffer(ctx, size, dynamic);
 }
@@ -688,7 +691,7 @@ func (d *Context) IsPointer(index int) bool {
 
 // See: http://duktape.org/api.html#duk_is_primitive
 func (d *Context) IsPrimitive(index int) bool {
-	return int(C.duk_is_primitive(d.duk_context, C.duk_idx_t(index))) == 1
+	return int(C._duk_is_primitive(d.duk_context, C.duk_idx_t(index))) == 1
 }
 
 // See: http://duktape.org/api.html#duk_is_strict_call
