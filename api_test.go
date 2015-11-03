@@ -25,13 +25,13 @@ func (s *DuktapeSuite) TestPcompileString(c *C) {
 }
 
 func (s *DuktapeSuite) TestPushErrorObject(c *C) {
-	s.ctx.PushErrorObject(ErrType, "Got an error thingy: ", 5)
+	s.ctx.PushErrorObject(ErrType, "Got an error thingy: %v", 5)
 	s.assertErrorInCtx(c, ErrType, "TypeError: Got an error thingy: 5")
 }
 
-func (s *DuktapeSuite) TestPushErrorObjectf(c *C) {
-	s.ctx.PushErrorObjectf(ErrURI, "Got an error thingy: %x", 0xdeadbeef)
-	s.assertErrorInCtx(c, ErrURI, "URIError: Got an error thingy: deadbeef")
+func (s *DuktapeSuite) TestPushErrorObjectVa(c *C) {
+	s.ctx.PushErrorObjectVa(ErrURI, "Got an error thingy: %x %s %s", 0xdeadbeef, "is", "tasty")
+	s.assertErrorInCtx(c, ErrURI, "URIError: Got an error thingy: deadbeef is tasty")
 }
 
 func (s *DuktapeSuite) assertErrorInCtx(c *C, code int, msg string) {

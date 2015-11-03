@@ -2,7 +2,6 @@ package duktape
 
 /*
 #cgo linux LDFLAGS: -lm
-#cgo CFLAGS: -DDUK_OPT_DEEP_C_STACK
 
 # include "duktape.h"
 extern duk_ret_t goFunctionCall(duk_context *ctx);
@@ -37,7 +36,7 @@ func (c *Context) transmute(p unsafe.Pointer) {
 // this is a pojo containing only the values of the Context
 type context struct {
 	sync.Mutex
-	duk_context unsafe.Pointer
+	duk_context *C.duk_context
 	fnIndex     *functionIndex
 	timerIndex  *timerIndex
 }
@@ -54,7 +53,7 @@ func New() *Context {
 	}
 }
 
-func contextFromPointer(ctx unsafe.Pointer) *Context {
+func contextFromPointer(ctx *C.duk_context) *Context {
 	return &Context{&context{duk_context: ctx}}
 }
 
@@ -97,7 +96,7 @@ func (d *Context) PushGoFunction(fn func(*Context) int) int {
 }
 
 //export goFunctionCall
-func goFunctionCall(cCtx unsafe.Pointer) C.duk_ret_t {
+func goFunctionCall(cCtx *C.duk_context) C.duk_ret_t {
 	d := contextFromPointer(cCtx)
 
 	funPtr, ctxPtr := d.getFunctionPtrs()
@@ -109,7 +108,7 @@ func goFunctionCall(cCtx unsafe.Pointer) C.duk_ret_t {
 }
 
 //export goFinalizeCall
-func goFinalizeCall(cCtx unsafe.Pointer) {
+func goFinalizeCall(cCtx *C.duk_context) {
 	d := contextFromPointer(cCtx)
 
 	funPtr, ctxPtr := d.getFunctionPtrs()
