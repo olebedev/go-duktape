@@ -103,3 +103,21 @@ const (
 	LogError
 	LogFatal
 )
+
+const (
+	// Keep it sync with duktape.h:555
+	BufobjCreateArrbuf      = 1 << 4 // internal flag: create backing arraybuffer; keep in one byte
+	BufobjDuktapeAuffer     = 0
+	BufobjNodejsAuffer      = 1
+	BufobjArraybuffer       = 2
+	BufobjDataview          = 3 | BufobjCreateArrbuf
+	BufobjInt8array         = 4 | BufobjCreateArrbuf
+	BufobjUint8array        = 5 | BufobjCreateArrbuf
+	BufobjUint8clampedarray = 6 | BufobjCreateArrbuf
+	BufobjInt16array        = 7 | BufobjCreateArrbuf
+	BufobjUint16array       = 8 | BufobjCreateArrbuf
+	BufobjInt32array        = 9 | BufobjCreateArrbuf
+	BufobjUint32array       = 10 | BufobjCreateArrbuf
+	BufobjFloat32array      = 11 | BufobjCreateArrbuf
+	BufobjFloat64array      = 12 | BufobjCreateArrbuf
+)

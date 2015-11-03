@@ -152,6 +152,12 @@ static void _duk_push_error_object(duk_context *ctx, duk_errcode_t err_code, con
 static void _duk_error_raw(duk_context *ctx, duk_errcode_t err_code, const char *filename, duk_int_t line, const char *text) {
 	duk_error_raw(ctx, err_code, filename, line, text);
 }
+static void _duk_log(duk_context *ctx, duk_int_t level, const char *str) {
+	duk_log(ctx, level, "%s", str);
+}
+static void _duk_push_external_buffer(duk_context *ctx) {
+	duk_push_external_buffer(ctx);
+}
 */
 import "C"
 import (
@@ -336,8 +342,7 @@ func (d *Context) Equals(index1 int, index2 int) bool {
 // Error's message.
 //
 // See: http://duktape.org/api.html#duk_error
-func (d *Context) Error(errCode int, a ...interface{}) {
-	str := fmt.Sprint(a...)
+func (d *Context) Error(errCode int, str string) {
 	__str__ := C.CString(str)
 	defer C.free(unsafe.Pointer(__str__))
 	C._duk_error(d.duk_context, C.duk_errcode_t(errCode), __str__)
@@ -987,26 +992,9 @@ func (d *Context) PushDynamicBuffer(size int) {
 	C._duk_push_dynamic_buffer(d.duk_context, C.duk_size_t(size))
 }
 
-// PushErrorObject pushes a new Error object to the stack. This will call
-// fmt.Sprint, forwarding arguments after the error code, to produce the
-// Error's message.
-//
 // See: http://duktape.org/api.html#duk_push_error_object
-func (d *Context) PushErrorObject(errCode int, a ...interface{}) {
-	str := fmt.Sprint(a...)
-	__str__ := C.CString(str)
-	defer C.free(unsafe.Pointer(__str__))
-	C._duk_push_error_object(d.duk_context, C.duk_errcode_t(errCode), __str__)
-}
-
-// PushErrorObjectf pushes a new Error object to the stack. This will call
-// fmt.Sprintf, forwarding the format string and additional arguments, to
-// produce the Error's message.
-//
-// See: http://duktape.org/api.html#duk_push_error_object
-func (d *Context) PushErrorObjectf(errCode int, format string, a ...interface{}) {
-	str := fmt.Sprintf(format, a...)
-	__str__ := C.CString(str)
+func (d *Context) PushErrorObject(errCode int, format string, value interface{}) {
+	__str__ := C.CString(fmt.Sprintf(format, value))
 	defer C.free(unsafe.Pointer(__str__))
 	C._duk_push_error_object(d.duk_context, C.duk_errcode_t(errCode), __str__)
 }
@@ -1462,6 +1450,118 @@ func (d *Context) PushPointer(p unsafe.Pointer) {
 	C.duk_push_pointer(d.duk_context, p)
 }
 
+//---[ Duktape 1.3 API ]--- //
+// See: http://duktape.org/api.html#duk_debugger_attach
+func (d *Context) DebuggerAttach(
+	readFn,
+	writeFn,
+	peekFn,
+	readFlushFn,
+	writeFlushFn,
+	detachedFn *[0]byte,
+	uData unsafe.Pointer) {
+	C.duk_debugger_attach(
+		d.duk_context,
+		readFn,
+		writeFn,
+		peekFn,
+		readFlushFn,
+		writeFlushFn,
+		detachedFn,
+		uData,
+	)
+}
+
+// See: http://duktape.org/api.html#duk_debugger_cooperate
+func (d *Context) DebuggerCooperate() {
+	C.duk_debugger_cooperate(d.duk_context)
+}
+
+// See: http://duktape.org/api.html#duk_debugger_detach
+func (d *Context) DebuggerDetach() {
+	C.duk_debugger_detach(d.duk_context)
+}
+
+// See: http://duktape.org/api.html#duk_dump_function
+func (d *Context) DumpFunction() {
+	C.duk_dump_function(d.duk_context)
+}
+
+// See: http://duktape.org/api.html#duk_error_va
+func (d *Context) ErrorVa(errCode int, a ...interface{}) {
+	str := fmt.Sprint(a...)
+	d.Error(errCode, str)
+}
+
+// See: http://duktape.org/api.html#duk_instanceof
+func (d *Context) Instanceof(idx1, idx2 int) bool {
+	return int(C.duk_instanceof(d.duk_context, C.duk_idx_t(idx1), C.duk_idx_t(idx2))) == 1
+}
+
+// See: http://duktape.org/api.html#duk_is_lightfunc
+func (d *Context) IsLightfunc(index int) bool {
+	return int(C.duk_is_lightfunc(d.duk_context, C.duk_idx_t(index))) == 1
+}
+
+// See: http://duktape.org/api.html#duk_load_function
+func (d *Context) LoadFunction() {
+	C.duk_load_function(d.duk_context)
+}
+
+// See: http://duktape.org/api.html#duk_log
+func (d *Context) Log(loglevel int, format string, value interface{}) {
+	__str__ := C.CString(fmt.Sprintf(format, value))
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_log(d.duk_context, C.duk_int_t(loglevel), __str__)
+}
+
+// See: http://duktape.org/api.html#duk_log_va
+func (d *Context) LogVa(logLevel int, format string, values ...interface{}) {
+	__str__ := C.CString(fmt.Sprintf(format, values...))
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_log(d.duk_context, C.duk_int_t(logLevel), __str__)
+}
+
+// See: http://duktape.org/api.html#duk_pnew
+func (d *Context) Pnew(nargs int) error {
+	result := int(C.duk_pnew(d.duk_context, C.duk_idx_t(nargs)))
+	return d.castStringToError(result)
+}
+
+// See: http://duktape.org/api.html#duk_push_buffer_object
+func (d *Context) PushBufferObject(bufferIdx, size, length int, flags uint) {
+	C.duk_push_buffer_object(
+		d.duk_context,
+		C.duk_idx_t(bufferIdx),
+		C.duk_size_t(size),
+		C.duk_size_t(length),
+		C.duk_uint_t(flags),
+	)
+}
+
+// See: http://duktape.org/api.html#duk_push_c_lightfunc
+func (d *Context) PushCLightfunc(fn *[0]byte, nargs, length, magic int) int {
+	return int(C.duk_push_c_lightfunc(
+		d.duk_context,
+		fn,
+		C.duk_idx_t(nargs),
+		C.duk_idx_t(length),
+		C.duk_int_t(magic),
+	))
+}
+
+// See: http://duktape.org/api.html#duk_push_error_object_va
+func (d *Context) PushErrorObjectVa(errCode int, format string, values ...interface{}) {
+	__str__ := C.CString(fmt.Sprintf(format, values...))
+	defer C.free(unsafe.Pointer(__str__))
+	C._duk_push_error_object(d.duk_context, C.duk_errcode_t(errCode), __str__)
+}
+
+// See: http://duktape.org/api.html#duk_push_external_buffer
+func (d *Context) PushExternalBuffer() {
+	C._duk_push_external_buffer(d.duk_context)
+}
+
 /**
  * Unimplemented.
  *
@@ -1470,6 +1570,7 @@ func (d *Context) PushPointer(p unsafe.Pointer) {
  * DecodeString see: http://duktape.org/api.html#duk_decode_string
  * Free see: http://duktape.org/api.html#duk_free
  * FreeRaw see: http://duktape.org/api.html#duk_free_raw
+ * GetCFunction see: http://duktape.org/api.html#duk_get_c_function
  * GetMemoryFunctions see: http://duktape.org/api.html#duk_get_memory_functions
  * MapString see: http://duktape.org/api.html#duk_map_string
  * PushSprintf see: http://duktape.org/api.html#duk_push_sprintf
@@ -1478,6 +1579,9 @@ func (d *Context) PushPointer(p unsafe.Pointer) {
  * PutNumberList see: http://duktape.org/api.html#duk_put_number_list
  * Realloc see: http://duktape.org/api.html#duk_realloc
  * ReallocRaw see: http://duktape.org/api.html#duk_realloc_raw
- * GetCFunction see: http://duktape.org/api.html#duk_get_c_function
  * RequireCFunction see: http://duktape.org/api.html#duk_require_c_function
+ * ConfigBuffer see: http://duktape.org/api.html#duk_config_buffer
+ * GetBufferData see: http://duktape.org/api.html#duk_get_buffer_data
+ * StealBuffer see: http://duktape.org/api.html#duk_steal_buffer
+ * RequireBufferData see: http://duktape.org/api.html#duk_require_buffer_data
  */
