@@ -64,7 +64,7 @@ func main() {
 
   // Let's inject `setTimeout`, `setInterval`, `clearTimeout`,
   // `clearInterval` into global scope.
-  ctx.DefineTimers()
+  ctx.PushTimers()
 
   ch := make(chan string)
   ctx.PushGlobalGoFunction("second", func(_ *Context) int {
@@ -85,6 +85,8 @@ first step
 second step
 $
 ```
+
+Also you can `FlushTimers()`.
 
 
 ### Status
