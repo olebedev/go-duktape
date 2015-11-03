@@ -8,7 +8,7 @@ import (
 
 // DefineTimers defines `setTimeout`, `clearTimeout`, `setInterval`,
 // `clearInterval` into global context.
-func (d *Context) DefineTimers() error {
+func (d *Context) PushTimers() error {
 	d.PushGlobalStash()
 	// check if timers already exists
 	if !d.HasPropString(-1, "timers") {
@@ -27,7 +27,7 @@ func (d *Context) DefineTimers() error {
 	}
 }
 
-func (d *Context) ResetTimers() {
+func (d *Context) FlushTimers() {
 	d.PushGlobalStash()
 	d.PushObject()
 	d.PutPropString(-2, "timers") // stash -> [ timers:{} ]
