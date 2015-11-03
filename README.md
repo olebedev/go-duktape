@@ -1,7 +1,7 @@
 # Duktape bindings for Go(Golang) [![wercker status](https://app.wercker.com/status/1ce7671d7223880e967bf8a81b96341d/s/master "wercker status")](https://app.wercker.com/project/bykey/1ce7671d7223880e967bf8a81b96341d)
 [Duktape](http://duktape.org/index.html) is a thin, embeddable javascript engine.
 Most of the [api](http://duktape.org/api.html) is implemented.
-The exceptions are listed [here](https://github.com/olebedev/go-duktape/blob/master/api.go#L1679).
+The exceptions are listed [here](https://github.com/olebedev/go-duktape/blob/master/api.go#L1566).
 
 ### Usage
 
@@ -64,7 +64,7 @@ func main() {
 
   // Let's inject `setTimeout`, `setInterval`, `clearTimeout`,
   // `clearInterval` into global scope.
-  ctx.DefineTimers()
+  ctx.PushTimers()
 
   ch := make(chan string)
   ctx.PushGlobalGoFunction("second", func(_ *Context) int {
@@ -85,6 +85,8 @@ first step
 second step
 $
 ```
+
+Also you can `FlushTimers()`.
 
 
 ### Status
