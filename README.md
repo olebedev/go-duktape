@@ -98,3 +98,5 @@ The package is not fully tested, so be careful.
 
 Pull requests are welcome!  
 __Convention:__ fork the repository and make changes on your fork in a feature branch.
+
+### Chat [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/olebedev/go-duktape?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
