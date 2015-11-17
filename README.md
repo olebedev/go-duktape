@@ -88,6 +88,10 @@ $
 
 Also you can `FlushTimers()`.
 
+### Command line tool
+
+Install `go get gopkg.in/olebedev/go-duktape.v2/...`.  
+Execute file.js: `$GOPATH/bin/go-duk file.js`.
 
 ### Status
 
