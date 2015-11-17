@@ -93,6 +93,17 @@ Also you can `FlushTimers()`.
 Install `go get gopkg.in/olebedev/go-duktape.v2/...`.  
 Execute file.js: `$GOPATH/bin/go-duk file.js`.
 
+### Benchmarks
+| prog        | time  |
+| ------------|-------|
+|[otto](https://github.com/robertkrimen/otto)|200.13s|
+|[anko](https://github.com/mattn/anko)|231.19s|
+|[agora](https://github.com/PuerkitoBio/agora/)|149.33s|
+|[GopherLua](https://github.com/yuin/gopher-lua/)|8.39s|
+|**go-duktape**|**9.80s**|
+
+More details are [here](https://github.com/olebedev/go-duktape/wiki/Benchmarks).
+
 ### Status
 
 The package is not fully tested, so be careful.
