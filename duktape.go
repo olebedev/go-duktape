@@ -78,7 +78,7 @@ func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) (int,
 // index (relative to stack bottom) of the pushed function
 func (d *Context) PushGoFunction(fn func(*Context) int) int {
 	funPtr := d.fnIndex.add(fn)
-	ctxPtr := unsafe.Pointer(d)
+	ctxPtr := contexts.add(d)
 
 	idx := d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
 	d.PushCFunction((*[0]byte)(C.goFinalizeCall), 1)
@@ -100,8 +100,8 @@ func (d *Context) PushGoFunction(fn func(*Context) int) int {
 func goFunctionCall(cCtx *C.duk_context) C.duk_ret_t {
 	d := contextFromPointer(cCtx)
 
-	funPtr, ctxPtr := d.getFunctionPtrs()
-	d.transmute(ctxPtr)
+	funPtr, ctx := d.getFunctionPtrs()
+	d.transmute(unsafe.Pointer(ctx))
 
 	result := d.fnIndex.get(funPtr)(d)
 
@@ -112,29 +112,29 @@ func goFunctionCall(cCtx *C.duk_context) C.duk_ret_t {
 func goFinalizeCall(cCtx *C.duk_context) {
 	d := contextFromPointer(cCtx)
 
-	funPtr, ctxPtr := d.getFunctionPtrs()
-	d.transmute(ctxPtr)
+	funPtr, ctx := d.getFunctionPtrs()
+	d.transmute(unsafe.Pointer(ctx))
 
 	d.fnIndex.delete(funPtr)
 }
 
-func (d *Context) getFunctionPtrs() (funPtr, ctxPtr unsafe.Pointer) {
+func (d *Context) getFunctionPtrs() (unsafe.Pointer, *Context) {
 	d.PushCurrentFunction()
 	d.GetPropString(-1, goFunctionPtrProp)
-	funPtr = d.GetPointer(-1)
+	funPtr := d.GetPointer(-1)
 
 	d.Pop()
 
 	d.GetPropString(-1, goContextPtrProp)
-	ctxPtr = d.GetPointer(-1)
-
+	ctx := contexts.get(d.GetPointer(-1))
 	d.Pop2()
-	return
+	return funPtr, ctx
 }
 
 // Destroy destroy all the references to the functions and freed the pointers
 func (d *Context) Destroy() {
 	d.fnIndex.destroy()
+	contexts.delete(d)
 }
 
 type Error struct {
@@ -246,4 +246,57 @@ func (i *functionIndex) destroy() {
 		C.free(ptr)
 	}
 	i.Unlock()
+}
+
+type ctxIndex struct {
+	sync.RWMutex
+	ctxs map[unsafe.Pointer]*Context
+}
+
+func (ci *ctxIndex) add(ctx *Context) unsafe.Pointer {
+
+	ci.RLock()
+	for ptr, ctxPtr := range ci.ctxs {
+		if ctxPtr == ctx {
+			ci.RUnlock()
+			return ptr
+		}
+	}
+	ci.RUnlock()
+
+	ptr := C.malloc(1)
+
+	ci.Lock()
+	ci.ctxs[ptr] = ctx
+	ci.Unlock()
+
+	return ptr
+}
+
+func (ci *ctxIndex) get(ptr unsafe.Pointer) *Context {
+	ci.RLock()
+	ctx := ci.ctxs[ptr]
+	ci.RUnlock()
+	return ctx
+}
+
+func (ci *ctxIndex) delete(ctx *Context) {
+	ci.Lock()
+	for ptr, ctxPtr := range ci.ctxs {
+		if ctxPtr == ctx {
+			delete(ci.ctxs, ptr)
+			C.free(ptr)
+			ci.Unlock()
+			return
+		}
+	}
+	panic(fmt.Sprintf("context (%p) doesn't exist", ctx))
+}
+
+var contexts *ctxIndex
+
+func init() {
+	contexts = &ctxIndex{
+		ctxs: make(map[unsafe.Pointer]*Context),
+	}
 }
