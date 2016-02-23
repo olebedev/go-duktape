@@ -2,6 +2,7 @@ package duktape
 
 /*
 #cgo linux LDFLAGS: -lm
+#cgo freebsd LDFLAGS: -lm
 
 # include "duktape.h"
 extern duk_ret_t goFunctionCall(duk_context *ctx);

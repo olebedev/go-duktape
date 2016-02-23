@@ -1,4 +1,4 @@
-# Duktape bindings for Go(Golang) [![wercker status](https://app.wercker.com/status/1ce7671d7223880e967bf8a81b96341d/s/master "wercker status")](https://app.wercker.com/project/bykey/1ce7671d7223880e967bf8a81b96341d)
+# Duktape bindings for Go(Golang) [![wercker status](https://app.wercker.com/status/1ce7671d7223880e967bf8a81b96341d/s "wercker status")](https://app.wercker.com/project/bykey/1ce7671d7223880e967bf8a81b96341d)
 [Duktape](http://duktape.org/index.html) is a thin, embeddable javascript engine.
 Most of the [api](http://duktape.org/api.html) is implemented.
 The exceptions are listed [here](https://github.com/olebedev/go-duktape/blob/master/api.go#L1566).
@@ -88,6 +88,21 @@ $
 
 Also you can `FlushTimers()`.
 
+### Command line tool
+
+Install `go get gopkg.in/olebedev/go-duktape.v2/...`.  
+Execute file.js: `$GOPATH/bin/go-duk file.js`.
+
+### Benchmarks
+| prog        | time  |
+| ------------|-------|
+|[otto](https://github.com/robertkrimen/otto)|200.13s|
+|[anko](https://github.com/mattn/anko)|231.19s|
+|[agora](https://github.com/PuerkitoBio/agora/)|149.33s|
+|[GopherLua](https://github.com/yuin/gopher-lua/)|8.39s|
+|**go-duktape**|**9.80s**|
+
+More details are [here](https://github.com/olebedev/go-duktape/wiki/Benchmarks).
 
 ### Status
 
@@ -98,3 +113,5 @@ The package is not fully tested, so be careful.
 
 Pull requests are welcome!  
 __Convention:__ fork the repository and make changes on your fork in a feature branch.
+
+### Chat [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/olebedev/go-duktape?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
