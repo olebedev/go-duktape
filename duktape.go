@@ -77,7 +77,7 @@ func (d *Context) PushGlobalGoFunction(name string, fn func(*Context) int) (int,
 // PushGoFunction push the given function into duktape stack, returns non-negative
 // index (relative to stack bottom) of the pushed function
 func (d *Context) PushGoFunction(fn func(*Context) int) int {
-	funPtr := d.fnIndex.Add(fn)
+	funPtr := d.fnIndex.add(fn)
 	ctxPtr := unsafe.Pointer(d)
 
 	idx := d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
@@ -103,7 +103,7 @@ func goFunctionCall(cCtx *C.duk_context) C.duk_ret_t {
 	funPtr, ctxPtr := d.getFunctionPtrs()
 	d.transmute(ctxPtr)
 
-	result := d.fnIndex.Get(funPtr)(d)
+	result := d.fnIndex.get(funPtr)(d)
 
 	return C.duk_ret_t(result)
 }
@@ -115,7 +115,7 @@ func goFinalizeCall(cCtx *C.duk_context) {
 	funPtr, ctxPtr := d.getFunctionPtrs()
 	d.transmute(ctxPtr)
 
-	d.fnIndex.Delete(funPtr)
+	d.fnIndex.delete(funPtr)
 }
 
 func (d *Context) getFunctionPtrs() (funPtr, ctxPtr unsafe.Pointer) {
@@ -134,7 +134,7 @@ func (d *Context) getFunctionPtrs() (funPtr, ctxPtr unsafe.Pointer) {
 
 // Destroy destroy all the references to the functions and freed the pointers
 func (d *Context) Destroy() {
-	d.fnIndex.Destroy()
+	d.fnIndex.destroy()
 }
 
 type Error struct {
@@ -191,7 +191,7 @@ func (t Type) String() string {
 
 type functionIndex struct {
 	functions map[unsafe.Pointer]func(*Context) int
-	sync.Mutex
+	sync.RWMutex
 }
 
 type timerIndex struct {
@@ -212,37 +212,38 @@ func newFunctionIndex() *functionIndex {
 	}
 }
 
-func (i *functionIndex) Add(fn func(*Context) int) unsafe.Pointer {
+func (i *functionIndex) add(fn func(*Context) int) unsafe.Pointer {
 	ptr := C.malloc(1)
 
 	i.Lock()
-	defer i.Unlock()
 	i.functions[ptr] = fn
+	i.Unlock()
 
 	return ptr
 }
 
-func (i *functionIndex) Get(ptr unsafe.Pointer) func(*Context) int {
-	i.Lock()
-	defer i.Unlock()
+func (i *functionIndex) get(ptr unsafe.Pointer) func(*Context) int {
+	i.RLock()
+	fn := i.functions[ptr]
+	i.RUnlock()
 
-	return i.functions[ptr]
+	return fn
 }
 
-func (i *functionIndex) Delete(ptr unsafe.Pointer) {
+func (i *functionIndex) delete(ptr unsafe.Pointer) {
 	i.Lock()
-	defer i.Unlock()
-
 	delete(i.functions, ptr)
+	i.Unlock()
+
 	C.free(ptr)
 }
 
-func (i *functionIndex) Destroy() {
+func (i *functionIndex) destroy() {
 	i.Lock()
-	defer i.Unlock()
 
 	for ptr, _ := range i.functions {
 		delete(i.functions, ptr)
 		C.free(ptr)
 	}
+	i.Unlock()
 }
