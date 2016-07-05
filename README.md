@@ -21,6 +21,9 @@ func main() {
   result := ctx.GetNumber(-1)
   ctx.Pop()
   fmt.Println("result is:", result)
+  // To prevent memory leaks, don't forget to clean up after 
+  // yourself when you're done using a context.
+  ctx.DestroyHeap()
 }
 ```
 
