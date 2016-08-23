@@ -17,7 +17,7 @@ import "gopkg.in/olebedev/go-duktape.v2"
 
 func main() {
   ctx := duktape.New()
-  ctx.EvalString(`2 + 3`)
+  ctx.PevalString(`2 + 3`)
   result := ctx.GetNumber(-1)
   ctx.Pop()
   fmt.Println("result is:", result)
@@ -43,7 +43,7 @@ func main() {
     fmt.Println(c.SafeToString(-1))
     return 0
   })
-  ctx.EvalString(`log('Go lang Go!')`)
+  ctx.PevalString(`log('Go lang Go!')`)
 }
 ```
 then run it.
