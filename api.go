@@ -1460,13 +1460,14 @@ func (d *Context) DebuggerAttach(
 	writeFlushFn,
 	detachedFn *[0]byte,
 	uData unsafe.Pointer) {
-	C.duk_debugger_attach(
+	C.duk_debugger_attach_custom(
 		d.duk_context,
 		readFn,
 		writeFn,
 		peekFn,
 		readFlushFn,
 		writeFlushFn,
+		nil,
 		detachedFn,
 		uData,
 	)
