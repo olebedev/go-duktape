@@ -4,10 +4,12 @@ package duktape
 #cgo linux LDFLAGS: -lm
 #cgo freebsd LDFLAGS: -lm
 
-# include "duktape.h"
+#include "duktape.h"
+#include "duk_logging.h"
+#include "duk_print_alert.h"
+#include "duk_module_duktape.h"
 extern duk_ret_t goFunctionCall(duk_context *ctx);
 extern void goFinalizeCall(duk_context *ctx);
-
 */
 import "C"
 import (
@@ -45,13 +47,40 @@ type context struct {
 // New returns plain initialized duktape context object
 // See: http://duktape.org/api.html#duk_create_heap_default
 func New() *Context {
-	return &Context{
+	d := &Context{
 		&context{
 			duk_context: C.duk_create_heap(nil, nil, nil, nil, nil),
 			fnIndex:     newFunctionIndex(),
 			timerIndex:  &timerIndex{},
 		},
 	}
+
+	ctx := d.duk_context
+	C.duk_logging_init(ctx, 0)
+	C.duk_print_alert_init(ctx, 0)
+	C.duk_module_duktape_init(ctx)
+
+	// duk_ret_t cb_resolve_module(duk_context *ctx) {
+	// 	const char *module_id;
+	// 	const char *parent_id;
+	// 	module_id = duk_require_string(ctx, 0);
+	// 	parent_id = duk_require_string(ctx, 1);
+	// 	duk_push_sprintf(ctx, "%s.js", module_id);
+	// 	return 1;  // nrets
+	// };
+	// duk_ret_t cb_load_module(duk_context *ctx) {
+	// 	// Entry stack: [ resolved_id exports module ]
+	// 	// Arrive at the JS source code for the module somehow.
+	// 	duk_push_string(ctx, module_source);
+	// 	return 1;
+	// };
+	// C.duk_push_object(ctx)
+	// C.duk_push_c_function(ctx, C.cb_resolve_module, DUK_VARARGS)
+	// C.duk_put_prop_string(ctx, -2, "resolve")
+	// C.duk_push_c_function(ctx, C.cb_load_module, DUK_VARARGS)
+	// C.duk_put_prop_string(ctx, -2, "load")
+	// C.duk_module_node_init(ctx)
+	return d
 }
 
 func contextFromPointer(ctx *C.duk_context) *Context {

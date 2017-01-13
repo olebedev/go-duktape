@@ -27,12 +27,12 @@ func (s *DuktapeSuite) TestPevalFile_Error(c *C) {
 
 func (s *DuktapeSuite) TestPushErrorObject(c *C) {
 	s.ctx.PushErrorObject(ErrType, "Got an error thingy: %v", 5)
-	s.assertErrorInCtx(c, ErrType, "TypeError: Got an error thingy: 5")
+	s.assertErrorInCtx(c, ErrType, "Error: Got an error thingy: 5")
 }
 
 func (s *DuktapeSuite) TestPushErrorObjectVa(c *C) {
 	s.ctx.PushErrorObjectVa(ErrURI, "Got an error thingy: %x %s %s", 0xdeadbeef, "is", "tasty")
-	s.assertErrorInCtx(c, ErrURI, "URIError: Got an error thingy: deadbeef is tasty")
+	s.assertErrorInCtx(c, ErrURI, "Error: Got an error thingy: deadbeef is tasty")
 }
 
 func (s *DuktapeSuite) assertErrorInCtx(c *C, code int, msg string) {

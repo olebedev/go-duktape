@@ -60,7 +60,7 @@ const (
 
 const (
 	// Common prototypes
-	ErrError int = 100 + iota
+	ErrError int = 1
 	ErrEval
 	ErrRange
 	ErrReference

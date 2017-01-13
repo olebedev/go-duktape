@@ -1,7 +1,10 @@
 package duktape
 
 /*
-# include "duktape.h"
+#include "duktape.h"
+#include "duk_logging.h"
+#include "duk_v1_compat.h"
+#include "duk_print_alert.h"
 static void _duk_eval_string(duk_context *ctx, const char *str) {
   duk_eval_string(ctx, str);
 }
@@ -425,7 +428,7 @@ func (d *Context) EvalStringNoresult(src string) {
 func (d *Context) Fatal(errCode int, errMsg string) {
 	__errMsg__ := C.CString(errMsg)
 	defer C.free(unsafe.Pointer(__errMsg__))
-	C.duk_fatal(d.duk_context, C.duk_errcode_t(errCode), __errMsg__)
+	C.duk_fatal_raw(d.duk_context, __errMsg__)
 }
 
 // See: http://duktape.org/api.html#duk_gc
@@ -669,7 +672,7 @@ func (d *Context) IsNull(index int) bool {
 
 // See: http://duktape.org/api.html#duk_is_null_or_undefined
 func (d *Context) IsNullOrUndefined(index int) bool {
-	return int(C.duk_is_null_or_undefined(d.duk_context, C.duk_idx_t(index))) == 1
+	return d.IsNull(index) || d.IsUndefined(index)
 }
 
 // See: http://duktape.org/api.html#duk_is_number
@@ -1263,10 +1266,11 @@ func (d *Context) ResizeBuffer(index int, newSize int) {
 }
 
 // See: http://duktape.org/api.html#duk_safe_call
-func (d *Context) SafeCall(fn *[0]byte, nargs, nrets int) int {
+func (d *Context) SafeCall(fn, args *[0]byte, nargs, nrets int) int {
 	return int(C.duk_safe_call(
 		d.duk_context,
 		fn,
+		unsafe.Pointer(&args),
 		C.duk_idx_t(nargs),
 		C.duk_idx_t(nrets),
 	))
@@ -1334,7 +1338,7 @@ func (d *Context) SwapTop(index int) {
 
 // See: http://duktape.org/api.html#duk_throw
 func (d *Context) Throw() {
-	C.duk_throw(d.duk_context)
+	C.duk_throw_raw(d.duk_context)
 }
 
 // See: http://duktape.org/api.html#duk_to_boolean
@@ -1463,7 +1467,7 @@ func (d *Context) DebuggerAttach(
 	writeFlushFn,
 	detachedFn *[0]byte,
 	uData unsafe.Pointer) {
-	C.duk_debugger_attach_custom(
+	C.duk_debugger_attach(
 		d.duk_context,
 		readFn,
 		writeFn,
