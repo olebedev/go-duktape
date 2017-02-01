@@ -19,7 +19,7 @@ func (s *DuktapeSuite) TestPevalFile_Error(c *C) {
 }
 
 func (s *DuktapeSuite) TestPcompileString(c *C) {
-	err := s.ctx.PcompileString(CompileFunction, "foo")
+	err := s.ctx.PcompileString(CompileEval, "foo(")
 	c.Assert(err.(*Error).Type, Equals, "SyntaxError")
 	c.Assert(err.(*Error).LineNumber, Equals, 1)
 }
