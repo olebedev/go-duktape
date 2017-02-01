@@ -18,12 +18,11 @@ func (s *DuktapeSuite) TestPevalFile_Error(c *C) {
 	c.Assert(err.(*Error).Message, Equals, "no sourcecode")
 }
 
-// This test panics.
-// func (s *DuktapeSuite) TestPcompileString(c *C) {
-// 	err := s.ctx.PcompileString(CompileFunction, "foo")
-// 	c.Assert(err.(*Error).Type, Equals, "SyntaxError")
-// 	c.Assert(err.(*Error).LineNumber, Equals, 1)
-// }
+func (s *DuktapeSuite) TestPcompileString(c *C) {
+	err := s.ctx.PcompileString(CompileEval, "foo(")
+	c.Assert(err.(*Error).Type, Equals, "SyntaxError")
+	c.Assert(err.(*Error).LineNumber, Equals, 1)
+}
 
 func (s *DuktapeSuite) TestPushErrorObject(c *C) {
 	s.ctx.PushErrorObject(ErrType, "Got an error thingy: %v", 5)
