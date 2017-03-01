@@ -1,6 +1,7 @@
 package duktape
 
 /*
+#cgo CFLAGS: -std=c99 -Os -fomit-frame-pointer -fstrict-aliasing
 #include "duktape.h"
 #include "duk_logging.h"
 #include "duk_v1_compat.h"
