@@ -1170,9 +1170,21 @@ func (d *Context) RequireBuffer(index int, outSize int) {
 	C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
+// See: http://duktape.org/api.html#duk_require_callable
+func (d *Context) RequireCallable(index int) {
+	// At present, duk_require_callable is a macro that just calls duk_require_function.
+	// cgo does not support such macros we have to call it directly.
+	C.duk_require_function(d.duk_context, C.duk_idx_t(index))
+}
+
 // See: http://duktape.org/api.html#duk_require_context
 func (d *Context) RequireContext(index int) *Context {
 	return contextFromPointer(C.duk_require_context(d.duk_context, C.duk_idx_t(index)))
+}
+
+// See: http://duktape.org/api.html#duk_require_function
+func (d *Context) RequireFunction(index int) {
+	C.duk_require_function(d.duk_context, C.duk_idx_t(index))
 }
 
 // See: http://duktape.org/api.html#duk_require_heapptr
@@ -1594,6 +1606,4 @@ func (d *Context) PushExternalBuffer() {
  * StealBuffer see: http://duktape.org/api.html#duk_steal_buffer
  * RequireBufferData see: http://duktape.org/api.html#duk_require_buffer_data
  * IsEvalError see: http://duktape.org/api.html#duk_is_eval_error
- * RequireFunction see: http://duktape.org/api.html#duk_require_function
- * RequireCallable see: http://duktape.org/api.html#duk_require_callable
  */
