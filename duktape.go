@@ -9,6 +9,7 @@ package duktape
 #include "duk_logging.h"
 #include "duk_print_alert.h"
 #include "duk_module_duktape.h"
+#include "duk_console.h"
 extern duk_ret_t goFunctionCall(duk_context *ctx);
 extern void goFinalizeCall(duk_context *ctx);
 */
@@ -60,6 +61,7 @@ func New() *Context {
 	C.duk_logging_init(ctx, 0)
 	C.duk_print_alert_init(ctx, 0)
 	C.duk_module_duktape_init(ctx)
+	C.duk_console_init(ctx, 0)
 
 	return d
 }
