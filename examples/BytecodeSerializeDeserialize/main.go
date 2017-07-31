@@ -102,5 +102,9 @@ func deserializeAndRunInNewContext(bc []byte) error {
 	retval := ctx.GetString(-1)
 	log.Printf("Return value is: %s", retval)
 
+	// To prevent memory leaks, don't forget to clean up after
+	// yourself when you're done using a context.
+	ctx.DestroyHeap()	
+	
 	return nil
 }
