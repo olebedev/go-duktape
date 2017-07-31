@@ -170,13 +170,13 @@ import (
 )
 
 // See: http://duktape.org/api.html#duk_alloc
-func (d *Context) Alloc(size int) {
-	C.duk_alloc(d.duk_context, C.duk_size_t(size))
+func (d *Context) Alloc(size int) unsafe.Pointer {
+	return C.duk_alloc(d.duk_context, C.duk_size_t(size))
 }
 
 // See: http://duktape.org/api.html#duk_alloc_raw
-func (d *Context) AllocRaw(size int) {
-	C.duk_alloc_raw(d.duk_context, C.duk_size_t(size))
+func (d *Context) AllocRaw(size int) unsafe.Pointer {
+	return C.duk_alloc_raw(d.duk_context, C.duk_size_t(size))
 }
 
 // See: http://duktape.org/api.html#duk_base64_decode
@@ -443,8 +443,8 @@ func (d *Context) GetBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_get_buffer
-func (d *Context) GetBuffer(index int, outSize int) {
-	C.duk_get_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) GetBuffer(index int, outSize *int) unsafe.Pointer {
+	return C.duk_get_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_get_context
@@ -961,12 +961,12 @@ func (d *Context) PushBoolean(val bool) {
 }
 
 // See: http://duktape.org/api.html#duk_push_buffer
-func (d *Context) PushBuffer(size int, dynamic bool) {
+func (d *Context) PushBuffer(size int, dynamic bool) unsafe.Pointer {
 	var __dynamic__ int
 	if dynamic {
 		__dynamic__ = 1
 	}
-	C._duk_push_buffer(d.duk_context, C.duk_size_t(size), C.duk_bool_t(__dynamic__))
+	return C._duk_push_buffer(d.duk_context, C.duk_size_t(size), C.duk_bool_t(__dynamic__))
 }
 
 // See: http://duktape.org/api.html#duk_push_c_function
@@ -990,8 +990,8 @@ func (d *Context) PushCurrentThread() {
 }
 
 // See: http://duktape.org/api.html#duk_push_dynamic_buffer
-func (d *Context) PushDynamicBuffer(size int) {
-	C._duk_push_dynamic_buffer(d.duk_context, C.duk_size_t(size))
+func (d *Context) PushDynamicBuffer(size int) unsafe.Pointer {
+	return C._duk_push_dynamic_buffer(d.duk_context, C.duk_size_t(size))
 }
 
 // See: http://duktape.org/api.html#duk_push_error_object
@@ -1007,8 +1007,8 @@ func (d *Context) PushFalse() {
 }
 
 // See: http://duktape.org/api.html#duk_push_fixed_buffer
-func (d *Context) PushFixedBuffer(size int) {
-	C._duk_push_fixed_buffer(d.duk_context, C.duk_size_t(size))
+func (d *Context) PushFixedBuffer(size int) unsafe.Pointer {
+	return C._duk_push_fixed_buffer(d.duk_context, C.duk_size_t(size))
 }
 
 // See: http://duktape.org/api.html#duk_push_global_object
@@ -1166,8 +1166,8 @@ func (d *Context) RequireBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_require_buffer
-func (d *Context) RequireBuffer(index int, outSize int) {
-	C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) RequireBuffer(index int, outSize int) unsafe.Pointer {
+	return C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_require_callable
@@ -1226,8 +1226,8 @@ func (d *Context) RequireObjectCoercible(index int) {
 }
 
 // See: http://duktape.org/api.html#duk_require_pointer
-func (d *Context) RequirePointer(index int) {
-	C.duk_require_pointer(d.duk_context, C.duk_idx_t(index))
+func (d *Context) RequirePointer(index int) unsafe.Pointer {
+	return C.duk_require_pointer(d.duk_context, C.duk_idx_t(index))
 }
 
 // See: http://duktape.org/api.html#duk_require_stack
@@ -1274,8 +1274,8 @@ func (d *Context) RequireValidIndex(index int) {
 }
 
 // See: http://duktape.org/api.html#duk_resize_buffer
-func (d *Context) ResizeBuffer(index int, newSize int) {
-	C.duk_resize_buffer(d.duk_context, C.duk_idx_t(index), C.duk_size_t(newSize))
+func (d *Context) ResizeBuffer(index int, newSize int) unsafe.Pointer {
+	return C.duk_resize_buffer(d.duk_context, C.duk_idx_t(index), C.duk_size_t(newSize))
 }
 
 // See: http://duktape.org/api.html#duk_safe_call
@@ -1360,8 +1360,8 @@ func (d *Context) ToBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_to_buffer
-func (d *Context) ToBuffer(index int, outSize int) {
-	C._duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) ToBuffer(index int, outSize int) unsafe.Pointer {
+	return C._duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_defaultvalue
@@ -1370,13 +1370,13 @@ func (d *Context) ToDefaultvalue(index int, hint int) {
 }
 
 // See: http://duktape.org/api.html#duk_to_dynamic_buffer
-func (d *Context) ToDynamicBuffer(index int, outSize int) {
-	C._duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) ToDynamicBuffer(index int, outSize int) unsafe.Pointer {
+	return C._duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_fixed_buffer
-func (d *Context) ToFixedBuffer(index int, outSize int) {
-	C._duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) ToFixedBuffer(index int, outSize int) unsafe.Pointer {
+	return C._duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_int
@@ -1413,8 +1413,8 @@ func (d *Context) ToObject(index int) {
 }
 
 // See: http://duktape.org/api.html#duk_to_pointer
-func (d *Context) ToPointer(index int) {
-	C.duk_to_pointer(d.duk_context, C.duk_idx_t(index))
+func (d *Context) ToPointer(index int) unsafe.Pointer {
+	return C.duk_to_pointer(d.duk_context, C.duk_idx_t(index))
 }
 
 // See: http://duktape.org/api.html#duk_to_primitive
