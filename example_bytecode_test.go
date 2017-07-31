@@ -14,15 +14,16 @@
 package duktape_test
 
 import (
-	"gopkg.in/olebedev/go-duktape.v2"
-	"log"
 	"errors"
+	"fmt"
+	"log"
 	"reflect"
 	"unsafe"
-	"fmt"
+
+	"gopkg.in/olebedev/go-duktape.v2"
 )
 
-func Example() {
+func ExampleContext() {
 	// Parenthesis is necessary.
 	// DeserializeAndRunInNewContext assuming that script in jsfunc doesn't have arguments and return string.
 	jsfunc := "(function dump_from() { return 'It\\'s alive!'; })"
@@ -38,7 +39,6 @@ func Example() {
 	}
 
 	fmt.Print(retval)
-
 	// Output:
 	// It's alive!
 }
@@ -62,7 +62,7 @@ func getSerializedFunc(script string) ([]byte, error) {
 	if uintptr(rawmem) == uintptr(0) {
 		return nil, errors.New("Can't interpret bytecode dump as a valid, non-empty buffer.")
 	}
-	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data:uintptr(rawmem), Len:sz, Cap:sz}))
+	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: sz, Cap: sz}))
 
 	// Creating another slice for return is necessary because rawmemslice pointing at memory that belongs to
 	// current context. That memory will be freed during execution of DestroyHeap().
@@ -86,7 +86,7 @@ func deserializeAndRunInNewContext(bc []byte) (string, error) {
 	}
 
 	//copying bytecode into the created buffer
-	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data:uintptr(rawmem), Len:len(bc), Cap:len(bc)}))
+	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: len(bc), Cap: len(bc)}))
 	copy(rawmemslice, bc)
 
 	// Transmute duktape bytecode into duktape function
