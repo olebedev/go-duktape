@@ -20,10 +20,10 @@ import (
 	"reflect"
 	"unsafe"
 
-	"gopkg.in/olebedev/go-duktape.v2"
+	"gopkg.in/olebedev/go-duktape.v3"
 )
 
-func ExampleContext() {
+func ExampleSerializeFunction() {
 	// Parenthesis is necessary.
 	// DeserializeAndRunInNewContext assuming that script in jsfunc doesn't have arguments and return string.
 	jsfunc := "(function dump_from() { return 'It\\'s alive!'; })"
