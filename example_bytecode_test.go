@@ -1,4 +1,4 @@
-package duktape_test
+package duktape
 
 import (
 	"fmt"
