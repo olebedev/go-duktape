@@ -1,28 +1,28 @@
 package duktape_test
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"unsafe"
+	"log"
 
 	"gopkg.in/olebedev/go-duktape.v3"
 )
 
 func ExampleContext_LoadFunction() {
-// Example of serialization duktape function to a byte slice; deserialization from byte slice to duktape
-// function and eval in another duktape context.
-//
-// Usecase: get byte slice from duktape function (to possibly later save it to the file, send by network and etc.)
-// Please, keep in mind restrictions for a deserialized duktape function from bytecode:
-// https://github.com/svaarala/duktape/blob/master/doc/bytecode.rst
-//
-//Excerpts:
-//	When to use bytecode dump/load
-//		There are two main motivations for using bytecode dump/load:
-//			-	Performance
-//			-	Obfuscation
-	
+	// Example of serialization duktape function to a byte slice; deserialization from byte slice to duktape
+	// function and eval in another duktape context.
+	//
+	// Usecase: get byte slice from duktape function (to possibly later save it to the file, send by network and etc.)
+	// Please, keep in mind restrictions for a deserialized duktape function from bytecode:
+	// https://github.com/svaarala/duktape/blob/master/doc/bytecode.rst
+	//
+	//Excerpts:
+	//	When to use bytecode dump/load
+	//		There are two main motivations for using bytecode dump/load:
+	//			-	Performance
+	//			-	Obfuscation
+
 	// Parenthesis is necessary.
 	js := "(function dump_from() { return 'It\\'s alive!'; })"
 
@@ -43,7 +43,7 @@ func ExampleContext_LoadFunction() {
 	rawmem := ctxSerialize.GetBuffer(-1, &sz)
 	// Check for null is necessary because duk_get_buffer can return NULL.
 	if uintptr(rawmem) == uintptr(0) {
-		return nil, errors.New("Can't interpret bytecode dump as a valid, non-empty buffer.")
+		log.Fatalf("Can't interpret bytecode dump as a valid, non-empty buffer.")
 	}
 	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: sz, Cap: sz}))
 
@@ -59,14 +59,14 @@ func ExampleContext_LoadFunction() {
 	ctxDeserialize := duktape.New()
 
 	//creating buffer on the context stack
-	rawmem := ctxDeserialize.PushBuffer(len(bc), false)
+	rawmem = ctxDeserialize.PushBuffer(len(bytecode), false)
 	if uintptr(rawmem) == uintptr(0) {
-		return "", errors.New("Can't push buffer to the context stack.")
+		log.Fatalf("Can't push buffer to the context stack.")
 	}
 
 	//copying bytecode into the created buffer
-	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: len(bc), Cap: len(bc)}))
-	copy(rawmemslice, bc)
+	rawmemslice = *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: len(bytecode), Cap: len(bytecode)}))
+	copy(rawmemslice, bytecode)
 
 	// Transmute duktape bytecode into duktape function
 	ctxDeserialize.LoadFunction()
@@ -83,6 +83,6 @@ func ExampleContext_LoadFunction() {
 
 	fmt.Println(retval)
 
-    // Output:
-    // It's alive!
+	// Output:
+	// It's alive!
 }
