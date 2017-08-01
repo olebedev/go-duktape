@@ -22,46 +22,17 @@ func ExampleContext_LoadFunction() {
 //		There are two main motivations for using bytecode dump/load:
 //			-	Performance
 //			-	Obfuscation
-
-package duktape_test
-
-import (
-	"errors"
-	"fmt"
-	"log"
-	"reflect"
-	"unsafe"
-
-	"gopkg.in/olebedev/go-duktape.v3"
-)
-
-func ExampleSerializeFunction() {
+	
 	// Parenthesis is necessary.
-	// DeserializeAndRunInNewContext assuming that script in jsfunc doesn't have arguments and return string.
-	jsfunc := "(function dump_from() { return 'It\\'s alive!'; })"
+	js := "(function dump_from() { return 'It\\'s alive!'; })"
 
-	bytecode, err := getSerializedFunc(jsfunc)
-	if err != nil {
-		log.Fatalf("Can't serialize '%s' to bytecode, err: %q.", jsfunc, err)
-	}
+	ctxSerialize := duktape.New()
 
-	retval, err := deserializeAndRunInNewContext(bytecode)
-	if err != nil {
-		log.Fatalf("Can't deserialize and run '%s' from bytecode, err: %q.", jsfunc, err)
-	}
+	// Compile js to duktape function and put it on the context stack
+	ctxSerialize.EvalLstring(js, len(js))
 
-	fmt.Print(retval)
-	// Output:
-	// It's alive!
-}
-
-func getSerializedFunc(script string) ([]byte, error) {
-	ctx := duktape.New()
-
-	ctx.EvalLstring(script, len(script))
-
-	// Transmute function into serializable duktape bytecode
-	ctx.DumpFunction()
+	// Transmute duktape function on the top of the context stack into serializable duktape bytecode
+	ctxSerialize.DumpFunction()
 
 	// void *duk_get_buffer(duk_context *ctx, duk_idx_t idx, duk_size_t *out_size);
 	// typedef size_t duk_size_t;
@@ -69,30 +40,26 @@ func getSerializedFunc(script string) ([]byte, error) {
 	// and I don't think that the limit of max(int) can be reached so for the sake of simplicity
 	// lets assume that bytecode size is always can be contained in int
 	var sz int
-	rawmem := ctx.GetBuffer(-1, &sz)
+	rawmem := ctxSerialize.GetBuffer(-1, &sz)
 	// Check for null is necessary because duk_get_buffer can return NULL.
 	if uintptr(rawmem) == uintptr(0) {
 		return nil, errors.New("Can't interpret bytecode dump as a valid, non-empty buffer.")
 	}
 	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: sz, Cap: sz}))
 
-	// Creating another slice for return is necessary because rawmemslice pointing at memory that belongs to
+	// Creating another slice for bytecode is necessary because rawmemslice pointing at memory that belongs to
 	// current context. That memory will be freed during execution of DestroyHeap().
-	retval := make([]byte, sz)
-	copy(retval, rawmemslice)
+	bytecode := make([]byte, sz)
+	copy(bytecode, rawmemslice)
 
 	// To prevent memory leaks, don't forget to clean up after
 	// yourself when you're done using a context.
-	ctx.DestroyHeap()
+	ctxSerialize.DestroyHeap()
 
-	return retval, nil
-}
-
-func deserializeAndRunInNewContext(bc []byte) (string, error) {
-	ctx := duktape.New()
+	ctxDeserialize := duktape.New()
 
 	//creating buffer on the context stack
-	rawmem := ctx.PushBuffer(len(bc), false)
+	rawmem := ctxDeserialize.PushBuffer(len(bc), false)
 	if uintptr(rawmem) == uintptr(0) {
 		return "", errors.New("Can't push buffer to the context stack.")
 	}
@@ -102,18 +69,20 @@ func deserializeAndRunInNewContext(bc []byte) (string, error) {
 	copy(rawmemslice, bc)
 
 	// Transmute duktape bytecode into duktape function
-	ctx.LoadFunction()
+	ctxDeserialize.LoadFunction()
 
 	// Call the function on top of a stack, example function doesn't have arguments.
-	ctx.Call(0)
+	ctxDeserialize.Call(0)
 
 	//example function return value is string
-	retval := ctx.GetString(-1)
-	log.Printf("Return value is: %s", retval)
+	retval := ctxDeserialize.GetString(-1)
 
 	// To prevent memory leaks, don't forget to clean up after
 	// yourself when you're done using a context.
-	ctx.DestroyHeap()
+	ctxDeserialize.DestroyHeap()
 
-	return retval, nil
+	fmt.Println(retval)
+
+    // Output:
+    // It's alive!
 }
