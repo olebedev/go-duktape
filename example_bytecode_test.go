@@ -1,3 +1,15 @@
+package duktape_test
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"unsafe"
+
+	"gopkg.in/olebedev/go-duktape.v3"
+)
+
+func ExampleContext_LoadFunction() {
 // Example of serialization duktape function to a byte slice; deserialization from byte slice to duktape
 // function and eval in another duktape context.
 //
