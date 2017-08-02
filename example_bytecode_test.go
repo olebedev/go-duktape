@@ -1,10 +1,12 @@
-package duktape
+package duktape_test
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
 	"log"
+	
+	duktape "github.com/olebedev/go-duktape"
 )
 
 func ExampleContext_LoadFunction() {
@@ -24,7 +26,7 @@ func ExampleContext_LoadFunction() {
 	// Parenthesis is necessary.
 	js := "(function dump_from() { return 'It\\'s alive!'; })"
 
-	ctxSerialize := New()
+	ctxSerialize := duktape.New()
 
 	// Compile js to duktape function and put it on the context stack
 	ctxSerialize.EvalLstring(js, len(js))
@@ -54,7 +56,7 @@ func ExampleContext_LoadFunction() {
 	// yourself when you're done using a context.
 	ctxSerialize.DestroyHeap()
 
-	ctxDeserialize := New()
+	ctxDeserialize := duktape.New()
 
 	//creating buffer on the context stack
 	rawmem = ctxDeserialize.PushBuffer(len(bytecode), false)
