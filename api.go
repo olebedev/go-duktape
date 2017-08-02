@@ -492,8 +492,8 @@ func (d *Context) GetLength(index int) int {
 }
 
 // See: http://duktape.org/api.html#duk_get_lstring
-func (d *Context) GetLstring(index int, outLen int) string {
-	if s := C.duk_get_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outLen))); s != nil {
+func (d *Context) GetLstring(index int, outLen *int) string {
+	if s := C.duk_get_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
 		return C.GoString(s)
 	}
 	return ""
@@ -1198,8 +1198,8 @@ func (d *Context) RequireInt(index int) int {
 }
 
 // See: http://duktape.org/api.html#duk_require_lstring
-func (d *Context) RequireLstring(index int, outLen int) string {
-	if s := C.duk_require_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outLen))); s != nil {
+func (d *Context) RequireLstring(index int, outLen *int) string {
+	if s := C.duk_require_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
 		return C.GoString(s)
 	}
 	return ""
@@ -1290,8 +1290,8 @@ func (d *Context) SafeCall(fn, args *[0]byte, nargs, nrets int) int {
 }
 
 // See: http://duktape.org/api.html#duk_safe_to_lstring
-func (d *Context) SafeToLstring(index int, outLen int) string {
-	if s := C.duk_safe_to_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outLen))); s != nil {
+func (d *Context) SafeToLstring(index int, outLen *int) string {
+	if s := C.duk_safe_to_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
 		return C.GoString(s)
 	}
 	return ""
@@ -1390,8 +1390,8 @@ func (d *Context) ToInt32(index int) int32 {
 }
 
 // See: http://duktape.org/api.html#duk_to_lstring
-func (d *Context) ToLstring(index int, outLen int) string {
-	if s := C.duk_to_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outLen))); s != nil {
+func (d *Context) ToLstring(index int, outLen *int) string {
+	if s := C.duk_to_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
 		return C.GoString(s)
 	}
 	return ""
