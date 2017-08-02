@@ -1166,8 +1166,8 @@ func (d *Context) RequireBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_require_buffer
-func (d *Context) RequireBuffer(index int, outSize int) unsafe.Pointer {
-	return C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) RequireBuffer(index int, outSize *int) unsafe.Pointer {
+	return C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_require_callable
@@ -1360,8 +1360,8 @@ func (d *Context) ToBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_to_buffer
-func (d *Context) ToBuffer(index int, outSize int) unsafe.Pointer {
-	return C._duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) ToBuffer(index int, outSize *int) unsafe.Pointer {
+	return C._duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_defaultvalue
@@ -1370,13 +1370,13 @@ func (d *Context) ToDefaultvalue(index int, hint int) {
 }
 
 // See: http://duktape.org/api.html#duk_to_dynamic_buffer
-func (d *Context) ToDynamicBuffer(index int, outSize int) unsafe.Pointer {
-	return C._duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) ToDynamicBuffer(index int, outSize *int) unsafe.Pointer {
+	return C._duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_fixed_buffer
-func (d *Context) ToFixedBuffer(index int, outSize int) unsafe.Pointer {
-	return C._duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+func (d *Context) ToFixedBuffer(index int, outSize *int) unsafe.Pointer {
+	return C._duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
 }
 
 // See: http://duktape.org/api.html#duk_to_int
