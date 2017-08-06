@@ -443,8 +443,9 @@ func (d *Context) GetBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_get_buffer
-func (d *Context) GetBuffer(index int, outSize *int) unsafe.Pointer {
-	return C.duk_get_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
+func (d *Context) GetBuffer(index int) (rawPtr unsafe.Pointer, outSize uint) {
+	rawPtr = C.duk_get_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	return rawPtr, outSize
 }
 
 // See: http://duktape.org/api.html#duk_get_context
@@ -492,8 +493,8 @@ func (d *Context) GetLength(index int) int {
 }
 
 // See: http://duktape.org/api.html#duk_get_lstring
-func (d *Context) GetLstring(index int, outLen *int) string {
-	if s := C.duk_get_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
+func (d *Context) GetLstring(index int) string {
+	if s := C.duk_get_lstring(d.duk_context, C.duk_idx_t(index), nil); s != nil {
 		return C.GoString(s)
 	}
 	return ""
@@ -1166,8 +1167,9 @@ func (d *Context) RequireBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_require_buffer
-func (d *Context) RequireBuffer(index int, outSize *int) unsafe.Pointer {
-	return C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
+func (d *Context) RequireBuffer(index int) (rawPtr unsafe.Pointer, outSize uint) {
+	rawPtr = C.duk_require_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	return rawPtr, outSize
 }
 
 // See: http://duktape.org/api.html#duk_require_callable
@@ -1198,8 +1200,8 @@ func (d *Context) RequireInt(index int) int {
 }
 
 // See: http://duktape.org/api.html#duk_require_lstring
-func (d *Context) RequireLstring(index int, outLen *int) string {
-	if s := C.duk_require_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
+func (d *Context) RequireLstring(index int) string {
+	if s := C.duk_require_lstring(d.duk_context, C.duk_idx_t(index), nil); s != nil {
 		return C.GoString(s)
 	}
 	return ""
@@ -1290,8 +1292,8 @@ func (d *Context) SafeCall(fn, args *[0]byte, nargs, nrets int) int {
 }
 
 // See: http://duktape.org/api.html#duk_safe_to_lstring
-func (d *Context) SafeToLstring(index int, outLen *int) string {
-	if s := C.duk_safe_to_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
+func (d *Context) SafeToLstring(index int) string {
+	if s := C.duk_safe_to_lstring(d.duk_context, C.duk_idx_t(index), nil); s != nil {
 		return C.GoString(s)
 	}
 	return ""
@@ -1360,8 +1362,9 @@ func (d *Context) ToBoolean(index int) bool {
 }
 
 // See: http://duktape.org/api.html#duk_to_buffer
-func (d *Context) ToBuffer(index int, outSize *int) unsafe.Pointer {
-	return C._duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
+func (d *Context) ToBuffer(index int) (rawPtr unsafe.Pointer, outSize uint) {
+	rawPtr = C._duk_to_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	return rawPtr, outSize
 }
 
 // See: http://duktape.org/api.html#duk_to_defaultvalue
@@ -1370,13 +1373,15 @@ func (d *Context) ToDefaultvalue(index int, hint int) {
 }
 
 // See: http://duktape.org/api.html#duk_to_dynamic_buffer
-func (d *Context) ToDynamicBuffer(index int, outSize *int) unsafe.Pointer {
-	return C._duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
+func (d *Context) ToDynamicBuffer(index int) (rawPtr unsafe.Pointer, outSize uint) {
+	rawPtr = C._duk_to_dynamic_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	return rawPtr, outSize
 }
 
 // See: http://duktape.org/api.html#duk_to_fixed_buffer
-func (d *Context) ToFixedBuffer(index int, outSize *int) unsafe.Pointer {
-	return C._duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outSize)))
+func (d *Context) ToFixedBuffer(index int) (rawPtr unsafe.Pointer, outSize uint) {
+	rawPtr = C._duk_to_fixed_buffer(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	return rawPtr, outSize
 }
 
 // See: http://duktape.org/api.html#duk_to_int
@@ -1390,8 +1395,8 @@ func (d *Context) ToInt32(index int) int32 {
 }
 
 // See: http://duktape.org/api.html#duk_to_lstring
-func (d *Context) ToLstring(index int, outLen *int) string {
-	if s := C.duk_to_lstring(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(outLen))); s != nil {
+func (d *Context) ToLstring(index int) string {
+	if s := C.duk_to_lstring(d.duk_context, C.duk_idx_t(index), nil); s != nil {
 		return C.GoString(s)
 	}
 	return ""

@@ -1,12 +1,10 @@
-package duktape_test
+package duktape
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
 	"log"
-	
-	duktape "github.com/olebedev/go-duktape"
 )
 
 func ExampleContext_LoadFunction() {
@@ -26,7 +24,7 @@ func ExampleContext_LoadFunction() {
 	// Parenthesis is necessary.
 	js := "(function dump_from() { return 'It\\'s alive!'; })"
 
-	ctxSerialize := duktape.New()
+	ctxSerialize := New()
 
 	// Compile js to duktape function and put it on the context stack
 	ctxSerialize.EvalLstring(js, len(js))
@@ -39,24 +37,23 @@ func ExampleContext_LoadFunction() {
 	// duk_size_t equivalent in Go is uint, however slice len is of a type int
 	// and I don't think that the limit of max(int) can be reached so for the sake of simplicity
 	// lets assume that bytecode size is always can be contained in int
-	var sz int
-	rawmem := ctxSerialize.GetBuffer(-1, &sz)
+	rawmem, bufsize := ctxSerialize.GetBuffer(-1)
 	// Check for null is necessary because duk_get_buffer can return NULL.
 	if uintptr(rawmem) == uintptr(0) {
 		log.Fatalf("Can't interpret bytecode dump as a valid, non-empty buffer.")
 	}
-	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: sz, Cap: sz}))
+	rawmemslice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: uintptr(rawmem), Len: int(bufsize), Cap: int(bufsize)}))
 
 	// Creating another slice for bytecode is necessary because rawmemslice pointing at memory that belongs to
 	// current context. That memory will be freed during execution of DestroyHeap().
-	bytecode := make([]byte, sz)
+	bytecode := make([]byte, bufsize)
 	copy(bytecode, rawmemslice)
 
 	// To prevent memory leaks, don't forget to clean up after
 	// yourself when you're done using a context.
 	ctxSerialize.DestroyHeap()
 
-	ctxDeserialize := duktape.New()
+	ctxDeserialize := New()
 
 	//creating buffer on the context stack
 	rawmem = ctxDeserialize.PushBuffer(len(bytecode), false)
