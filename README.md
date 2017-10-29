@@ -6,14 +6,14 @@ The exceptions are listed [here](https://github.com/olebedev/go-duktape/blob/mas
 ### Usage
 
 The package is fully go-getable, no need to install any external C libraries.  
-So, just type `go get gopkg.in/olebedev/go-duktape.v2` to install.
+So, just type `go get gopkg.in/olebedev/go-duktape.v3` to install.
 
 
 ```go
 package main
 
 import "fmt"
-import "gopkg.in/olebedev/go-duktape.v2"
+import "gopkg.in/olebedev/go-duktape.v3"
 
 func main() {
   ctx := duktape.New()
@@ -35,7 +35,7 @@ However, binding a Go function to the Javascript context is available:
 package main
 
 import "fmt"
-import "gopkg.in/olebedev/go-duktape.v2"
+import "gopkg.in/olebedev/go-duktape.v3"
 
 func main() {
   ctx := duktape.New()
@@ -60,7 +60,7 @@ There is a method to inject timers to the global scope:
 package main
 
 import "fmt"
-import "gopkg.in/olebedev/go-duktape.v2"
+import "gopkg.in/olebedev/go-duktape.v3"
 
 func main() {
   ctx := duktape.New()
@@ -93,7 +93,7 @@ Also you can `FlushTimers()`.
 
 ### Command line tool
 
-Install `go get gopkg.in/olebedev/go-duktape.v2/...`.  
+Install `go get gopkg.in/olebedev/go-duktape.v3/...`.  
 Execute file.js: `$GOPATH/bin/go-duk file.js`.
 
 ### Benchmarks
