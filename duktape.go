@@ -80,7 +80,8 @@ func (d *Context) PushGoFunction(fn func(*Context) int) int {
 	funPtr := d.fnIndex.add(fn)
 	ctxPtr := contexts.add(d)
 
-	idx := d.PushCFunction((*[0]byte)(C.goFunctionCall), C.DUK_VARARGS)
+	DUK_VARARGS := int(^uint(0) >> 1)
+	idx := d.PushCFunction((*[0]byte)(C.goFunctionCall), DUK_VARARGS)
 	d.PushCFunction((*[0]byte)(C.goFinalizeCall), 1)
 	d.PushPointer(funPtr)
 	d.PutPropString(-2, goFunctionPtrProp)
