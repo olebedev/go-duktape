@@ -105,8 +105,6 @@ const (
 )
 
 const (
-	// Keep it sync with duktape.h:555
-	BufobjCreateArrbuf      = 1 // internal flag: create backing arraybuffer; keep in one byte
 	BufobjDuktapeAuffer     = 0
 	BufobjNodejsAuffer      = 1
 	BufobjArraybuffer       = 2
