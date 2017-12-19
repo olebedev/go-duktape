@@ -31,7 +31,7 @@ func (s *DuktapeSuite) TestPushErrorObject(c *C) {
 }
 
 func (s *DuktapeSuite) TestPushErrorObjectVa(c *C) {
-	s.ctx.PushErrorObjectVa(ErrURI, "Got an error thingy: %x %s %s", 0xdeadbeef, "is", "tasty")
+	s.ctx.PushErrorObjectVa(ErrURI, "Got an error thingy: %x %s %s", int64(0xdeadbeef), "is", "tasty")
 	s.assertErrorInCtx(c, ErrURI, "URIError: Got an error thingy: deadbeef is tasty")
 }
 
