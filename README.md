@@ -94,6 +94,94 @@ first step
 second step
 $
 ```
+### Native constructor
+```
+package main
+
+import (
+  "github.com/olebedev/go-duktape"
+  "fmt"
+  "time"
+)
+
+func printName (c *duktape.Context) int {
+  c.PushThis()
+  c.GetPropString(-1, "name")
+  fmt.Printf( "My name is: %v\n", c.SafeToString(-1) )
+  return 0
+}
+
+func myObjectConstructor (c *duktape.Context) int {
+
+  if c.IsConstructorCall() == false {
+    return duktape.ErrRetType
+  }
+
+  c.PushThis()
+  c.Dup( 0 )
+  c.PutPropString(-2, "name")
+  return 0
+}
+
+func main() {
+
+  start := time.Now()
+
+  ctx := duktape.New()
+
+  /*
+  function MyObject(name) {
+      // When called as new MyObject(), "this" will be bound to the default
+      // instance object here.
+
+      this.name = name;
+
+      // Return undefined, which causes the default instance to be used.
+  }
+
+  // For an ECMAScript function an automatic MyObject.prototype value will be
+  // set.  That object will also have a .constructor property pointing back to
+  // Myobject.  You can add instance methods to MyObject.prototype.
+
+  MyObject.prototype.printName = function () {
+      print('My name is: ' + this.name);
+  };
+
+  var obj = new MyObject('test object');
+  obj.printName();  // My name is: test object
+  */
+
+  ctx.PushGoFunction(myObjectConstructor)
+  ctx.PushObject()
+  ctx.PushGoFunction(printName)
+  ctx.PutPropString(-2, "printName")
+  ctx.PutPropString(-2, "prototype")
+  ctx.PutGlobalString("MyObject")
+
+  /*
+  make this
+  */
+  ctx.EvalString( "var a = new MyObject('test name one');" )
+  ctx.EvalString( "a.printName();" )
+
+
+  /*
+  or make this
+  */
+  ctx.EvalString( "new MyObject('test name two');" )
+  ctx.GetPropString(-1, "printName")
+  ctx.Dup(-2)
+  ctx.CallMethod(0)
+  ctx.Pop()
+  ctx.Pop()
+  ctx.GetGlobalString("MyObject")
+
+
+  ctx.DestroyHeap()
+  elapsed := time.Since(start)
+  fmt.Printf("total time: %s\n", elapsed)
+}
+```
 
 Also you can `FlushTimers()`.
 
