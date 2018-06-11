@@ -5,7 +5,7 @@
 
 #include <stdarg.h>  /* va_list etc */
 #include <stddef.h>  /* size_t */
-#include <stdint.h>  /* SIZE_MAX */
+#include "duk_config.h"
 
 /* Write character with bound checking.  Offset 'off' is updated regardless
  * of whether an actual write is made.  This is necessary to satisfy snprintf()
@@ -283,7 +283,7 @@ int duk_minimal_sprintf(char *str, const char *format, ...) {
 	int ret;
 
 	va_start(ap, format);
-	ret = duk_minimal_vsnprintf(str, SIZE_MAX, format, ap);
+	ret = duk_minimal_vsnprintf(str, DUK_SIZE_MAX, format, ap);
 	va_end(ap);
 
 	return ret;
