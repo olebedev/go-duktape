@@ -821,8 +821,7 @@ func (d *Context) PcompileString(flags uint, src string) error {
 	__src__ := C.CString(src)
 	result := int(C._duk_pcompile_string(d.duk_context, C.duk_uint_t(flags), __src__))
 	C.free(unsafe.Pointer(__src__))
-	fmt.Println("result herhehreh", result)
-	return nil //d.castStringToError(result)
+	return d.castStringToError(result)
 }
 
 // See: http://duktape.org/api.html#duk_pcompile_string_filename
