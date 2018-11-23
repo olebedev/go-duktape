@@ -1589,6 +1589,11 @@ func (d *Context) PushExternalBuffer() {
 	C._duk_push_external_buffer(d.duk_context)
 }
 
+// See: http://duktape.org/api.html#duk_config_buffer
+func (d *Context) ConfigBuffer(bufferIdx int, buffer []byte) {
+	C.duk_config_buffer(d.duk_context, C.duk_idx_t(bufferIdx), unsafe.Pointer(&buffer[0]), C.duk_size_t(len(buffer)))
+}
+
 /**
  * Unimplemented.
  *
@@ -1607,7 +1612,6 @@ func (d *Context) PushExternalBuffer() {
  * Realloc see: http://duktape.org/api.html#duk_realloc
  * ReallocRaw see: http://duktape.org/api.html#duk_realloc_raw
  * RequireCFunction see: http://duktape.org/api.html#duk_require_c_function
- * ConfigBuffer see: http://duktape.org/api.html#duk_config_buffer
  * GetBufferData see: http://duktape.org/api.html#duk_get_buffer_data
  * StealBuffer see: http://duktape.org/api.html#duk_steal_buffer
  * RequireBufferData see: http://duktape.org/api.html#duk_require_buffer_data
