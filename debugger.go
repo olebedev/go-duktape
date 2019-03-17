@@ -72,6 +72,8 @@ type Debugger struct {
 var creationMutex = sync.Mutex{}
 var debugger *Debugger
 
+// Returns the Duktape debugger instance which can be attached to
+// multiple Duktape contexts using the Attach method
 func DukDebugger() *Debugger {
 	if debugger != nil {
 		return debugger
@@ -145,6 +147,8 @@ func (d *Debugger) getAttachment(slot int) (*attachment, error) {
 }
 
 // See: http://duktape.org/api.html#duk_debugger_attach
+//
+// All parameters are optional, except for readFunc, writeFunc.
 func (d *Debugger) Attach(ctx *Context,
 	readFunc DebugReadFunc,
 	writeFunc DebugWriteFunc,
