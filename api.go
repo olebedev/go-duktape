@@ -1476,39 +1476,6 @@ func (d *Context) PushPointer(p unsafe.Pointer) {
 	C.duk_push_pointer(d.duk_context, p)
 }
 
-//---[ Duktape 1.3 API ]--- //
-// See: http://duktape.org/api.html#duk_debugger_attach
-func (d *Context) DebuggerAttach(
-	readFn,
-	writeFn,
-	peekFn,
-	readFlushFn,
-	writeFlushFn,
-	detachedFn *[0]byte,
-	uData unsafe.Pointer) {
-	C.duk_debugger_attach(
-		d.duk_context,
-		readFn,
-		writeFn,
-		peekFn,
-		readFlushFn,
-		writeFlushFn,
-		nil,
-		detachedFn,
-		uData,
-	)
-}
-
-// See: http://duktape.org/api.html#duk_debugger_cooperate
-func (d *Context) DebuggerCooperate() {
-	C.duk_debugger_cooperate(d.duk_context)
-}
-
-// See: http://duktape.org/api.html#duk_debugger_detach
-func (d *Context) DebuggerDetach() {
-	C.duk_debugger_detach(d.duk_context)
-}
-
 // See: http://duktape.org/api.html#duk_dump_function
 func (d *Context) DumpFunction() {
 	C.duk_dump_function(d.duk_context)
