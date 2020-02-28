@@ -450,6 +450,12 @@ func (d *Context) GetBuffer(index int) (rawPtr unsafe.Pointer, outSize uint) {
 	return rawPtr, outSize
 }
 
+// See: http://duktape.org/api.html#duk_get_buffer_data
+func (d *Context) GetBufferData(index int) (rawPtr unsafe.Pointer, outSize uint) {
+	rawPtr = C.duk_get_buffer_data(d.duk_context, C.duk_idx_t(index), (*C.duk_size_t)(unsafe.Pointer(&outSize)))
+	return rawPtr, outSize
+}
+
 // See: http://duktape.org/api.html#duk_get_context
 func (d *Context) GetContext(index int) *Context {
 	return contextFromPointer(C.duk_get_context(d.duk_context, C.duk_idx_t(index)))
@@ -627,6 +633,11 @@ func (d *Context) IsBoundFunction(index int) bool {
 // See: http://duktape.org/api.html#duk_is_buffer
 func (d *Context) IsBuffer(index int) bool {
 	return int(C.duk_is_buffer(d.duk_context, C.duk_idx_t(index))) == 1
+}
+
+// See: http://duktape.org/api.html#duk_is_buffer_data
+func (d *Context) IsBufferData(index int) bool {
+	return int(C.duk_is_buffer_data(d.duk_context, C.duk_idx_t(index))) == 1
 }
 
 // See: http://duktape.org/api.html#duk_is_c_function
@@ -1584,7 +1595,6 @@ func (d *Context) ConfigBuffer(bufferIdx int, buffer []byte) {
  * Realloc see: http://duktape.org/api.html#duk_realloc
  * ReallocRaw see: http://duktape.org/api.html#duk_realloc_raw
  * RequireCFunction see: http://duktape.org/api.html#duk_require_c_function
- * GetBufferData see: http://duktape.org/api.html#duk_get_buffer_data
  * StealBuffer see: http://duktape.org/api.html#duk_steal_buffer
  * RequireBufferData see: http://duktape.org/api.html#duk_require_buffer_data
  * IsEvalError see: http://duktape.org/api.html#duk_is_eval_error
