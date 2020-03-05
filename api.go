@@ -1319,6 +1319,33 @@ func (d *Context) SafeToString(index int) string {
 	return ""
 }
 
+func (c *Context) SafeToBytes(index int) []byte {
+	var input []byte = nil
+	switch c.GetType(index) {
+	case TypeString:
+		input = []byte(c.SafeToString(index))
+		break
+	case TypeBuffer:
+		inputPtr, inputLength := c.GetBuffer(index)
+		input = (*[1 << 30]byte)(inputPtr)[:inputLength:inputLength]
+	case TypeObject:
+		if c.IsBufferData(index) {
+			inputPtr, inputLength := c.GetBufferData(index)
+			input = (*[1 << 30]byte)(inputPtr)[:inputLength:inputLength]
+		} else {
+			fmt.Printf("cannot handle TypeObject content type of input param when SafeToBytes\n")
+			return nil
+		}
+	case TypePointer:
+		fmt.Printf("cannot handle TypePointer content type of input param when SafeToBytes\n")
+		return nil
+	default:
+		fmt.Printf("cannot guess content type of input param when SafeToBytes\n")
+		return nil
+	}
+	return input
+}
+
 // See: http://duktape.org/api.html#duk_set_finalizer
 func (d *Context) SetFinalizer(index int) {
 	C.duk_set_finalizer(d.duk_context, C.duk_idx_t(index))
