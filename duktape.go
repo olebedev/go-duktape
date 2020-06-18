@@ -6,6 +6,7 @@ package duktape
 #cgo linux LDFLAGS: -lm
 #cgo freebsd LDFLAGS: -lm
 #cgo openbsd LDFLAGS: -lm
+#cgo dragonfly LDFLAGS: -lm
 
 #include "duktape.h"
 #include "duk_logging.h"
