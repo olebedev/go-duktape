@@ -109,7 +109,7 @@ static duk_ret_t duk__logger_prototype_raw(duk_context *ctx) {
 	const char *data;
 	duk_size_t data_len;
 
-	data = (const char *) duk_require_buffer(ctx, 0, &data_len);
+	data = (const char *) duk_require_buffer_data(ctx, 0, &data_len);
 	fwrite((const void *) data, 1, data_len, stderr);
 	fputc((int) '\n', stderr);
 #if defined(DUK_LOGGING_FLUSH)
@@ -181,11 +181,10 @@ static duk_ret_t duk__logger_prototype_log_shared(duk_context *ctx) {
 
 	now = duk_get_now(ctx);
 	duk_time_to_components(ctx, now, &comp);
-	sprintf((char *) date_buf, "%04u-%02u-%02uT%02u:%02u:%02u.%03uZ",
-	        (unsigned int) comp.year, (unsigned int) comp.month + 1,
-	        (unsigned int) comp.day, (unsigned int) comp.hours,
-	        (unsigned int) comp.minutes, (unsigned int) comp.seconds,
-	        (unsigned int) comp.milliseconds);
+	sprintf((char *) date_buf, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+	        (int) comp.year, (int) comp.month + 1, (int) comp.day,
+	        (int) comp.hours, (int) comp.minutes, (int) comp.seconds,
+	        (int) comp.milliseconds);
 
 	date_len = strlen((const char *) date_buf);
 
