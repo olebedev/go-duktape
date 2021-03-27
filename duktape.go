@@ -1,7 +1,7 @@
 package duktape
 
 /*
-#cgo !windows CFLAGS: -std=c99 -O3 -Wall -fomit-frame-pointer -fstrict-aliasing
+#cgo !windows CFLAGS: -std=c99 -O3 -Wall -Wno-unused-value -fomit-frame-pointer -fstrict-aliasing
 #cgo windows CFLAGS: -O3 -Wall -fomit-frame-pointer -fstrict-aliasing
 #cgo linux LDFLAGS: -lm
 #cgo freebsd LDFLAGS: -lm
@@ -11,6 +11,7 @@ package duktape
 #include "duktape.h"
 #include "duk_logging.h"
 #include "duk_print_alert.h"
+#include "duk_module_node.h"
 #include "duk_module_duktape.h"
 #include "duk_console.h"
 extern duk_ret_t goFunctionCall(duk_context *ctx);
@@ -61,12 +62,15 @@ func New() *Context {
 	}
 
 	ctx := d.duk_context
-	C.duk_logging_init(ctx, 0)
-	C.duk_print_alert_init(ctx, 0)
-	C.duk_module_duktape_init(ctx)
-	C.duk_console_init(ctx, 0)
+	setupEnv(ctx)
 
 	return d
+}
+
+func setupEnv(ctx *C.duk_context) {
+	C.duk_logging_init(ctx, 0)
+	C.duk_print_alert_init(ctx, 0)
+	C.duk_console_init(ctx, 0)
 }
 
 // Flags is a set of flags for controlling the behaviour of duktape.
@@ -97,16 +101,26 @@ func NewWithFlags(flags *Flags) *Context {
 	}
 
 	ctx := d.duk_context
-	C.duk_logging_init(ctx, C.duk_uint_t(flags.Logging))
-	C.duk_print_alert_init(ctx, C.duk_uint_t(flags.PrintAlert))
-	C.duk_module_duktape_init(ctx)
-	C.duk_console_init(ctx, C.duk_uint_t(flags.Console))
+	setupEnv(ctx)
 
 	return d
 }
 
 func contextFromPointer(ctx *C.duk_context) *Context {
 	return &Context{&context{duk_context: ctx}}
+}
+
+// SetupNodeRequire will call internal duk_module_node_init
+// before calling SetupNodeRequire, it's necessary to set 'resolve' and 'load on the stash
+// for more information see https://github.com/svaarala/duktape/blob/master/extras/module-node/README.rst
+func (c *Context) SetupNodeRequire() {
+	C.duk_module_node_init(c.context.duk_context)
+}
+
+// SetupDukRequire will call internal duk_module_duktape_init
+// see https://github.com/svaarala/duktape/blob/master/extras/module-duktape/README.rst
+func (c *Context) SetupDukRequire() {
+	C.duk_module_duktape_init(c.context.duk_context)
 }
 
 // PushGlobalGoFunction push the given function into duktape global object
