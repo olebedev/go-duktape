@@ -1,9 +1,6 @@
 package duktape
 
 /*
-#cgo !windows CFLAGS: -std=c99 -O3 -Wall -Wno-unused-value -fomit-frame-pointer -fstrict-aliasing
-#cgo windows CFLAGS: -O3 -Wall -Wno-unused-value -fomit-frame-pointer -fstrict-aliasing
-
 #include "duktape.h"
 */
 import "C"

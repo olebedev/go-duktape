@@ -1,8 +1,8 @@
 package duktape
 
 /*
-#cgo !windows CFLAGS: -std=c99 -O3 -Wall -fomit-frame-pointer -fstrict-aliasing
-#cgo windows CFLAGS: -O3 -Wall -fomit-frame-pointer -fstrict-aliasing
+#cgo !windows CFLAGS: -std=c99 -O3 -Wall -fomit-frame-pointer -fstrict-aliasing -Wno-unused-value -Wno-unused-function
+#cgo windows CFLAGS: -O3 -Wall -fomit-frame-pointer -fstrict-aliasing -Wno-unused-value -Wno-unused-function
 #cgo linux LDFLAGS: -lm
 #cgo freebsd LDFLAGS: -lm
 #cgo openbsd LDFLAGS: -lm
